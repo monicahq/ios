@@ -90,5 +90,25 @@ struct ContactsScreen: View {
   global store) inside a type.
 - All user-visible text in `Resources/Localizable.xcstrings`; give meaningful elements
   accessibility labels.
+- A screen with no state yet (like the welcome screen) is only the stateless screen view, shown by
+  `MonicaApp`; the `Route` and view model arrive with the first state to hold.
 - Use an Apple framework (SwiftData, BackgroundTasks, ...) or a Swift package only when a feature
   needs it, and justify a package in the feature's `plan.md`.
+
+## Languages
+
+- Every text lives in `Monica/Resources/Localizable.xcstrings`, under a key shared with the
+  Android app when the text exists there (`welcome_title`), with a value for English (source and
+  fallback) and every translation. French is provided.
+- iOS lists the languages of the catalog in the app's page of the Settings app, so people can
+  choose the app's language without changing the device's.
+- A text that includes a value uses one format string (`Instance: %@`), never concatenation, so
+  each language can place the value where its grammar wants it.
+
+## Theme
+
+`Theme/` and the colour sets of `Assets.xcassets/Colors` hold the Monica design system
+(shadcn-like greys, no accent colour, system font), in light and dark. Xcode generates a symbol for
+each colour: use `Color.page`, `Color.ink`, `Color.muted`... and the `PrimaryButtonStyle` and
+`OutlinedButtonStyle` in screens, never raw colours. Text uses the system text styles so it follows
+Dynamic Type.

@@ -49,6 +49,8 @@ jobs:
           xcodebuild test -project Monica.xcodeproj -scheme Monica
           -destination "$DESTINATION" -only-testing:MonicaTests
           -resultBundlePath build/unit-tests.xcresult
+      - name: Coverage gate
+        run: scripts/check-coverage.sh build/unit-tests.xcresult
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7

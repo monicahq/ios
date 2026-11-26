@@ -4,17 +4,14 @@ import SwiftUI
 struct MonicaApp: App {
     var body: some Scene {
         WindowGroup {
-            Greeting()
+            // Nothing is wired yet: signing up, logging in and choosing the instance come in the
+            // next features.
+            WelcomeScreen(
+                instanceHost: instanceHost(defaultInstanceURL),
+                onSignUp: {},
+                onLogIn: {},
+                onInstanceSettings: {}
+            )
         }
     }
-}
-
-struct Greeting: View {
-    var body: some View {
-        Text("welcome")
-    }
-}
-
-#Preview {
-    Greeting()
 }

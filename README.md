@@ -39,6 +39,7 @@ official Apple best practices, everything unit tested, every screen UI tested, n
 
 - [Architecture](docs/architecture.md): how screens, view models and repositories fit together
 - [Testing](docs/testing.md): what to test and how
+- [Accessibility](docs/accessibility.md): mandatory rules and checks for every screen
 
 ## Spec-driven development
 
