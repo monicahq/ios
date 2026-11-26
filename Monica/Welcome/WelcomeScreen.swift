@@ -212,6 +212,7 @@ private struct InstanceLine: View {
     }
 }
 
+@MainActor
 private func welcomePreview(_ state: WelcomeUiState) -> some View {
     WelcomeScreen(
         state: state,
