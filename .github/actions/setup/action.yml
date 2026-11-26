@@ -9,3 +9,14 @@ runs:
     - name: Generate the Xcode project
       shell: bash
       run: xcodegen generate
+
+    # CoreSimulator sometimes starts after the job, and xcodebuild then sees no simulator at all.
+    - name: Wait for the simulators
+      shell: bash
+      run: |
+        for attempt in $(seq 1 24); do
+          if xcrun simctl list devices available | grep -q "iPhone 17 ("; then exit 0; fi
+          echo "Simulators not ready yet (attempt $attempt)"; sleep 5
+        done
+        xcrun simctl list devices available
+        exit 1
