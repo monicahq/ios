@@ -30,3 +30,35 @@ struct InstanceTests {
         #expect(instanceHost("app.monicahq.com") == "app.monicahq.com")
     }
 }
+
+struct NormalizeInstanceURLTests {
+    @Test func `keeps a complete https address`() {
+        #expect(normalizeInstanceURL("https://monica.example.com") == "https://monica.example.com")
+    }
+
+    @Test func `accepts plain http for home servers`() {
+        #expect(normalizeInstanceURL("http://192.168.1.10:8080/monica") == "http://192.168.1.10:8080/monica")
+    }
+
+    @Test func `adds https when the scheme is missing`() {
+        #expect(normalizeInstanceURL("monica.example.com") == "https://monica.example.com")
+    }
+
+    @Test func `removes the trailing slashes`() {
+        #expect(normalizeInstanceURL("https://monica.example.com//") == "https://monica.example.com")
+    }
+
+    @Test func `ignores surrounding spaces`() {
+        #expect(normalizeInstanceURL("  https://monica.example.com \n") == "https://monica.example.com")
+    }
+
+    @Test(arguments: ["", "   "])
+    func `an empty address means the default instance`(input: String) {
+        #expect(normalizeInstanceURL(input) == defaultInstanceURL)
+    }
+
+    @Test(arguments: ["not an address", "ftp://monica.example.com", "https://", "monica example.com"])
+    func `refuses what is not a web address with a host`(input: String) {
+        #expect(normalizeInstanceURL(input) == nil)
+    }
+}

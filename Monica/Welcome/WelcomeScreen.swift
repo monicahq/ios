@@ -1,22 +1,66 @@
 import SwiftUI
 
-/// The first screen of the app: who Monica is, and the ways in (sign up, log in, choose the
-/// instance). Stateless: it shows what it is given and reports taps through the closures.
-struct WelcomeScreen: View {
-    /// The address of the current instance, as shown to people (`app.monicahq.com`).
-    let instanceHost: String
-    let onSignUp: () -> Void
-    let onLogIn: () -> Void
-    let onInstanceSettings: () -> Void
+/// Connects `WelcomeScreen` to its `WelcomeViewModel`. Signing up and logging in come later.
+struct WelcomeRoute: View {
+    @State var viewModel: WelcomeViewModel
 
     var body: some View {
+        WelcomeScreen(
+            state: viewModel.state,
+            onSignUp: {},
+            onLogIn: {},
+            onOpenInstanceSheet: { viewModel.openInstanceSheet() },
+            onDraftChange: { viewModel.changeDraft($0) },
+            onResetDraft: { viewModel.resetDraft() },
+            onDismissInstanceSheet: { viewModel.dismissInstanceSheet() },
+            onSaveInstance: { viewModel.saveInstance() }
+        )
+    }
+}
+
+/// The first screen of the app: who Monica is, and the ways in (sign up, log in, choose the
+/// instance). Stateless: it shows `state` and reports taps through the closures.
+struct WelcomeScreen: View {
+    let state: WelcomeUiState
+    let onSignUp: () -> Void
+    let onLogIn: () -> Void
+    let onOpenInstanceSheet: () -> Void
+    let onDraftChange: (String) -> Void
+    let onResetDraft: () -> Void
+    let onDismissInstanceSheet: () -> Void
+    let onSaveInstance: () -> Void
+
+    var body: some View {
+        content
+            .sheet(isPresented: Binding(
+                get: { state.sheet != nil },
+                // Swiping the sheet down closes it without saving, like Cancel.
+                set: { isPresented in
+                    if !isPresented, state.sheet != nil {
+                        onDismissInstanceSheet()
+                    }
+                }
+            )) {
+                if let sheet = state.sheet {
+                    InstanceSheetView(
+                        state: sheet,
+                        onDraftChange: onDraftChange,
+                        onReset: onResetDraft,
+                        onDismiss: onDismissInstanceSheet,
+                        onSave: onSaveInstance
+                    )
+                }
+            }
+    }
+
+    private var content: some View {
         GeometryReader { proxy in
             ScrollView {
                 // At least as tall as the screen, so the buttons sit at the bottom of tall screens,
                 // and scrollable, so nothing is cut on small screens or with a large text size.
                 VStack(spacing: 0) {
                     VStack(spacing: 0) {
-                        TopBar(onInstanceSettings: onInstanceSettings)
+                        TopBar(onInstanceSettings: onOpenInstanceSheet)
                         Brand()
                         Illustration()
                             .padding(.top, 16)
@@ -28,7 +72,7 @@ struct WelcomeScreen: View {
                     VStack(spacing: 0) {
                         Actions(onSignUp: onSignUp, onLogIn: onLogIn)
                             .padding(.horizontal, 24)
-                        InstanceLine(host: instanceHost, onTap: onInstanceSettings)
+                        InstanceLine(host: instanceHost(state.instanceURL), onTap: onOpenInstanceSheet)
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             .padding(.bottom, 16)
@@ -168,16 +212,33 @@ private struct InstanceLine: View {
     }
 }
 
+private func welcomePreview(_ state: WelcomeUiState) -> some View {
+    WelcomeScreen(
+        state: state,
+        onSignUp: {},
+        onLogIn: {},
+        onOpenInstanceSheet: {},
+        onDraftChange: { _ in },
+        onResetDraft: {},
+        onDismissInstanceSheet: {},
+        onSaveInstance: {}
+    )
+}
+
 #Preview("Light") {
-    WelcomeScreen(instanceHost: "app.monicahq.com", onSignUp: {}, onLogIn: {}, onInstanceSettings: {})
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL))
 }
 
 #Preview("Dark") {
-    WelcomeScreen(instanceHost: "app.monicahq.com", onSignUp: {}, onLogIn: {}, onInstanceSettings: {})
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL))
         .preferredColorScheme(.dark)
 }
 
 #Preview("French") {
-    WelcomeScreen(instanceHost: "app.monicahq.com", onSignUp: {}, onLogIn: {}, onInstanceSettings: {})
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL))
         .environment(\.locale, Locale(identifier: "fr"))
+}
+
+#Preview("Instance sheet") {
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL, sheet: InstanceSheetState(draft: defaultInstanceURL)))
 }

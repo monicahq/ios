@@ -58,16 +58,14 @@ final class WelcomeScreenUITests: XCTestCase {
     }
 
     @MainActor
-    func testTappingTheControlsDoesNothingYet() {
+    func testTappingSignUpAndLogInDoesNothingYet() {
         let app = open()
 
-        app.buttons["Instance settings"].tap()
         app.buttons["Sign up"].scrolledTo(in: app).tap()
         app.buttons["Log in"].scrolledTo(in: app).tap()
-        app.buttons[instanceLine].scrolledTo(in: app).tap()
 
         XCTAssertTrue(app.staticTexts[title].exists)
-        XCTAssertEqual(app.windows.count, 1)
+        XCTAssertFalse(app.staticTexts["Instance URL"].exists)
     }
 
     @MainActor

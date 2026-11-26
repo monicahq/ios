@@ -17,7 +17,7 @@ XCUITest UI tests with the automated accessibility audit for the screen.
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: can run in parallel (different files, no dependency on an unfinished task)
-- **[Story]**: the user story the task belongs to (US1, US2, US3)
+- **[Story]**: the user story the task belongs to (US1, US2, US3, US4)
 
 ## Phase 1: Setup
 
@@ -103,21 +103,47 @@ XCUITest UI tests with the automated accessibility audit for the screen.
 
 ---
 
-## Phase 6: Polish & cross-cutting concerns
+## Phase 6: User Story 4 - Choose the Monica instance (Priority: P4)
+
+**Goal**: the settings button and the instance line open a sheet to choose the instance, kept on the device.
+
+**Independent test**: open the sheet, save another address, relaunch the app: the instance line shows it.
+
+### Tests for User Story 4
+
+- [x] T027 [P] [US4] Write `NormalizeInstanceURLTests` (research R13) in `MonicaTests/Instance/InstanceTests.swift`
+- [x] T028 [P] [US4] Write `InstanceRepositoryTests` with a temporary `UserDefaults` (research R12) in `MonicaTests/Instance/InstanceRepositoryTests.swift`
+- [x] T029 [P] [US4] Write `WelcomeViewModelTests` for every state and event of `data-model.md` (Welcome UI state) in `MonicaTests/Welcome/WelcomeViewModelTests.swift`
+- [x] T030 [P] [US4] Write `InstanceSheetUITests` (open from both controls, save, Return, cancel, pull down, reset, error, French, largest text size, audit in light, dark and with the error) in `MonicaUITests/InstanceSheetUITests.swift`, with a fresh preferences store per launch in `MonicaUITests/Launch.swift`
+- [x] T031 [P] [US4] Add an end-to-end test of an address kept after relaunching to `MonicaUITests/MonicaAppUITests.swift`, and make `WelcomeScreenUITests` expect only "Sign up" and "Log in" to do nothing
+
+### Implementation for User Story 4
+
+- [x] T032 [US4] Implement `normalizeInstanceURL` in `Monica/Instance/Instance.swift` and `InstanceRepository` in `Monica/Instance/InstanceRepository.swift` until T027 and T028 pass
+- [x] T033 [US4] Implement `WelcomeUiState` and `WelcomeViewModel` in `Monica/Welcome/` until T029 passes
+- [x] T034 [US4] Add the sheet strings of `data-model.md` in English and French in `Monica/Resources/Localizable.xcstrings`
+- [x] T035 [US4] Implement `InstanceSheetView` (research R14) and `TextButtonStyle`, present the sheet from `WelcomeScreen`, add `WelcomeRoute`, and show it from `MonicaApp` with an `InstanceRepository`, until T030 and T031 pass
+
+**Checkpoint**: all user stories work and are tested.
+
+---
+
+## Phase 7: Polish & cross-cutting concerns
 
 - [x] T021 [P] Resolve `TODO(COVERAGE_GATE)` in `.specify/memory/constitution.md` and describe the gate in `docs/testing.md`
 - [x] T022 [P] Document languages and the theme in `docs/architecture.md`, accessibility in `docs/accessibility.md`, and the welcome screen in `docs/FEATURES.md`
 - [x] T023 Run the `definition-of-done` checks: SwiftFormat, SwiftLint, unit tests, coverage gate, debug and release builds
 - [x] T024 Run the UI tests on a simulator and the automated parts of `quickstart.md`
 - [x] T025 Review the change with the `accessibility-reviewer` agent and fix its findings
-- [ ] T026 Do the manual VoiceOver pass of `quickstart.md` on a device or a simulator
+- [ ] T026 Do the manual VoiceOver pass of `quickstart.md` on a device or a simulator, screen and sheet
+- [x] T036 [P] Describe preferences in `docs/architecture.md` and `docs/testing.md`, and the instance sheet in `docs/FEATURES.md`
 
 ---
 
 ## Dependencies & execution order
 
 - Setup (Phase 1) → Foundational (Phase 2) → User stories → Polish.
-- US1 depends on Phase 2. US2 and US3 depend on US1 (they test and extend the same screen) but not on each other.
+- US1 depends on Phase 2. US2, US3 and US4 depend on US1 (they test and extend the same screen) but not on each other.
 - Within a story, tests are written first and fail before the implementation.
 
 ### Parallel opportunities

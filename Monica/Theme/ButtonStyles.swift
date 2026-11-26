@@ -37,3 +37,18 @@ struct OutlinedButtonStyle: ButtonStyle {
             .contentShape(Capsule())
     }
 }
+
+/// Text button: a secondary action without a frame, such as Cancel next to Save.
+struct TextButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minWidth: 44, minHeight: 44)
+            .background(configuration.isPressed ? Color.hairline : Color.clear, in: Capsule())
+            .contentShape(Capsule())
+    }
+}

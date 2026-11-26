@@ -31,9 +31,8 @@ present, in the right order, readable, in light and in dark mode.
    showing the current instance ("Instance: app.monicahq.com").
 2. **Given** the device uses a dark theme, **When** the person opens the app, **Then** the screen
    uses the dark palette of the Monica design system and stays fully readable.
-3. **Given** the welcome screen is shown, **When** the person taps "Sign up", "Log in", the
-   instance settings button or the instance line, **Then** nothing happens and the screen stays
-   as it is (these actions come in later features).
+3. **Given** the welcome screen is shown, **When** the person taps "Sign up" or "Log in", **Then**
+   nothing happens and the screen stays as it is (these actions come in later features).
 
 ---
 
@@ -90,6 +89,41 @@ portrait and landscape, and check that every element can be read and reached.
 
 ---
 
+### User Story 4 - Choose the Monica instance (Priority: P4)
+
+A person who hosts Monica themselves, or uses another provider, sets the address of their
+instance from the welcome screen before signing up or logging in.
+
+**Why this priority**: most people use the hosted service and never change it, but self-hosters
+cannot use the app at all without it.
+
+**Independent Test**: open the instance sheet, enter another address, save, close and reopen the
+app: the instance line shows the new address.
+
+**Acceptance Scenarios**:
+
+1. **Given** the welcome screen, **When** the person taps the settings button or the instance
+   line, **Then** a sheet opens with a title, an explanation, an "Address" field filled with the
+   current address, and "Reset to default", "Cancel" and "Save" buttons.
+2. **Given** the sheet is open, **When** the person enters `https://monica.example.com` and taps
+   "Save" (or Return on the keyboard), **Then** the sheet closes and the instance line shows
+   `monica.example.com`.
+3. **Given** a saved address, **When** the person closes and reopens the app, **Then** the
+   instance line still shows it.
+4. **Given** the sheet is open with a changed address, **When** the person taps "Cancel" or pulls
+   the sheet down, **Then** the sheet closes and the address does not change.
+5. **Given** the sheet is open, **When** the person taps "Reset to default", **Then** the field
+   shows `https://app.monicahq.com`; nothing is saved until "Save".
+6. **Given** the person entered `monica.example.com` without `https://`, **When** they save,
+   **Then** `https://monica.example.com` is saved.
+7. **Given** the person emptied the field, **When** they save, **Then** the default address is
+   saved.
+8. **Given** the person entered something that is not an address (`not an address`,
+   `ftp://monica.example.com`), **When** they save, **Then** the sheet stays open and says what is
+   expected, also to VoiceOver; nothing is saved.
+
+---
+
 ### Edge Cases
 
 - Very long translations (a future language): text wraps onto several lines and buttons grow in
@@ -97,6 +131,11 @@ portrait and landscape, and check that every element can be read and reached.
 - Device language changes while the app is open: the screen shows the new language when the
   person comes back to it.
 - Device is offline: the screen shows exactly the same, since it needs no network.
+- Instance address with a port or a path (`http://192.168.1.10:8080/monica`): accepted as is, and
+  the instance line shows `192.168.1.10:8080/monica`.
+- Plain `http://` addresses are accepted: self-hosted instances on a home network often have no
+  certificate.
+- A long address with a large text size wraps in the field instead of scrolling sideways.
 - Tall screens: the buttons and the instance line sit at the bottom of the screen and the space
   between the description and the buttons absorbs the extra height, as in the design.
 
@@ -111,11 +150,10 @@ portrait and landscape, and check that every element can be read and reached.
   icons follow the person's text size.
 - **FR-003**: The screen MUST support the light and dark palettes of the Monica design system and
   follow the device theme.
-- **FR-004**: The instance line MUST show the default instance address without its scheme
+- **FR-004**: The instance line MUST show the current instance address without its scheme
   (`app.monicahq.com` for `https://app.monicahq.com`).
-- **FR-005**: "Sign up", "Log in", the instance settings button and the instance line MUST look
-  and behave as touchable controls (touch feedback, focusable, announced as buttons) but MUST NOT
-  trigger any action in this feature.
+- **FR-005**: "Sign up" and "Log in" MUST look and behave as touchable controls (touch feedback,
+  focusable, announced as buttons) but MUST NOT trigger any action in this feature.
 - **FR-006**: Every text on the screen, including spoken accessibility labels, MUST come from the
   app's translations, never be written directly into the screen.
 - **FR-007**: The app MUST be available in English and French. English MUST be the default and the
@@ -130,11 +168,23 @@ portrait and landscape, and check that every element can be read and reached.
 - **FR-011**: Every touchable control MUST have a touch target of at least 44 by 44 pt.
 - **FR-012**: The content MUST scroll when it does not fit the screen (small screen, landscape,
   large font) without cutting or overlapping any text.
+- **FR-013**: The instance settings button and the instance line MUST open the instance sheet of
+  the design, with the current address in its field.
+- **FR-014**: "Save" MUST store the address on the device, close the sheet and update the instance
+  line. The stored address MUST survive closing the app. An empty field saves the default address;
+  an address without a scheme gets `https://`; trailing slashes are removed.
+- **FR-015**: An address that is not an `http` or `https` address with a host MUST NOT be saved:
+  the sheet MUST show an error message, announced by VoiceOver.
+- **FR-016**: "Cancel" and pulling the sheet down MUST close it without saving. "Reset to default"
+  MUST put the default address in the field without saving.
+- **FR-017**: The sheet MUST meet the same accessibility requirements as the screen: its title is a
+  heading, the field has a visible label, every button is at least 44 pt, and it scrolls at the
+  largest text size.
 
 ### Key Entities
 
-- **Instance**: the Monica server the app will talk to, identified by its address. Only its
-  default value (`https://app.monicahq.com`) is shown in this feature; changing it comes later.
+- **Instance**: the Monica server the app will talk to, identified by its address. Defaults to
+  `https://app.monicahq.com`; the person can change it, and the choice is kept on the device.
 - **Translation**: the text of each label of the screen in a given language. English and French
   are provided now; the list of languages grows toward the languages of the web app.
 
@@ -155,9 +205,15 @@ portrait and landscape, and check that every element can be read and reached.
 
 ## Assumptions
 
-- "Nothing works for now" means the controls are shown but do nothing. The instance settings
-  sheet drawn in the design (instance URL field, Reset to default, Cancel, Save) is out of scope
-  and will be its own feature, as will signing up and logging in.
+- "Nothing works for now" means "Sign up" and "Log in" are shown but do nothing; they are their
+  own features. The instance sheet was added to this feature afterwards (User Story 4), as the
+  Android app did.
+- The app does not contact the instance when saving it: checking that a Monica server answers
+  there belongs to logging in, the first feature that calls the API.
+- Sheet texts, shared with the Android app: "Instance URL" / "URL de l'instance", the explanation
+  of the design, "Address" / "Adresse", placeholder `https://monica.example.com` /
+  `https://monica.exemple.fr`, "Reset to default" / "Rétablir par défaut", "Cancel" / "Annuler",
+  "Save" / "Sauvegarder" (the web app's translation, rather than the design's "Enregistrer").
 - The default instance is `https://app.monicahq.com`, as in the design.
 - The design draws the French version; the English texts are: "Welcome to Monica", "Monica helps
   you remember and organise your relationships and life context.", "Sign up", "Log in",

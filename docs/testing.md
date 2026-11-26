@@ -59,6 +59,15 @@ non-UI code is under 80%. `MonicaApp.swift`, `*Screen.swift` and `*View.swift` f
 are excluded: they are covered by the UI tests. So keep logic out of screen files: a pure function
 a screen needs (like `Welcome/Highlight.swift`) goes in its own file, with its own unit test.
 
+## Preferences
+
+`InstanceRepository` and the view models using it are tested with a real `UserDefaults` in a
+store of its own (`temporaryDefaults()` in `MonicaTests/Instance/InstanceRepositoryTests.swift`),
+rather than a fake behind a protocol that would exist only for the tests. UI tests do the same:
+`launchApp` gives each launch a fresh store through the `MONICA_DEFAULTS_SUITE` environment
+variable (read in Debug builds only), and a test passes the same `preferences` to a second launch
+to check what the app kept.
+
 ## Languages
 
 `LocalizationParityTests` fails when a string of the catalog is missing, or loses a placeholder, in

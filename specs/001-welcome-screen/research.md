@@ -1,6 +1,6 @@
 # Research: Welcome Screen
 
-## R1. View model or not
+## R1. View model or not (superseded by R11)
 
 - **Decision**: no view model. `MonicaApp` shows a stateless `WelcomeScreen(instanceHost:,
   onSignUp:, onLogIn:, onInstanceSettings:)` with empty closures and the host of the default
@@ -128,3 +128,53 @@
   app, so they also execute view code; measuring it would hide untested logic behind view lines.
 - **Alternatives considered**: a separate "Coverage" CI job: rejected, it would need a ruleset
   change for no benefit.
+
+## R11. State of the screen once the instance sheet exists (User Story 4)
+
+- **Decision**: R1 no longer holds: the screen now has state (the saved address, whether the sheet
+  is open, the draft, the error). `WelcomeViewModel` (`@Observable`, `@MainActor`) exposes one
+  `WelcomeUiState` (`instanceURL`, `sheet: InstanceSheetState?`) and one method per event.
+  `WelcomeRoute` owns it and passes the state and closures to the stateless `WelcomeScreen`, which
+  presents the sheet with `.sheet(isPresented:)` bound to `state.sheet != nil`; pulling the sheet
+  down calls the same dismiss event as Cancel.
+- **Rationale**: principle II's reference shape, and the same state as the Android app's
+  `WelcomeUiState`, so both apps behave alike.
+
+## R12. Storing the address: `UserDefaults`
+
+- **Decision**: one key `instance_url` in `UserDefaults`, behind a `@MainActor`
+  `InstanceRepository` (`url`, `setURL(_:)`) that receives its `UserDefaults` in its initializer.
+  Absent key = default. Synchronous: `UserDefaults` keeps values in memory and writes in the
+  background, so reading one string does not block the main actor, and the screen shows the saved
+  address on its first frame instead of flashing the default.
+- **Tests**: a real `UserDefaults` in a suite of its own per test (unit tests), and per launch (UI
+  tests, through `MONICA_DEFAULTS_SUITE`, read in Debug only). No protocol and fake: they would
+  exist only for the tests (principle I), and the real store is as fast.
+- **Alternatives considered**: SwiftData: far too much for one string. Keychain: the address is
+  not a secret.
+
+## R13. Normalising and validating the address
+
+- **Decision**: a pure function `normalizeInstanceURL(_:) -> String?` in `Instance/Instance.swift`,
+  the same rule as the Android app: trim; empty → default; any space → refused; no `://` → prefix
+  `https://`; remove trailing slashes; refused unless `URLComponents` finds an `http`/`https`
+  scheme and a host. The view model keeps the sheet open with `isError` when it returns nil.
+- **Rationale**: unit tested without UI; same addresses accepted on both platforms.
+
+## R14. Sheet layout and accessibility
+
+- **Decision**: drawn as in the design: title (header trait), explanation, visible "Address" label
+  above a bordered field, error line, then "Reset to default", "Cancel" (text buttons) and "Save"
+  (filled) side by side, stacked at accessibility text sizes. Full height, opaque `Card`
+  background, visible grabber. The field wraps (`axis: .vertical`, URL keyboard, no
+  autocapitalisation or autocorrection); a new line typed with Return is removed and means Save.
+  The error is a sentence with an icon in `Ink` (not colour alone), also the field's hint, and
+  announced with `AccessibilityNotification.Announcement`. The field's border is `Muted`, not the
+  design's hairline, for 3:1.
+- **Rationale**: `performAccessibilityAudit()` on iOS 26 fails a system `Form` with Cancel and
+  Save in the navigation bar (bar buttons do not fully follow Dynamic Type; glass background
+  fails contrast), half-height sheets (text reported as clipped) and single-line fields (long
+  address clipped). The chosen layout passes the audit in light, dark and with the error.
+- **Alternatives considered**: `Form` in a `NavigationStack` with toolbar buttons, the usual iOS
+  sheet: rejected for the audit failures above. `ViewThatFits` for the buttons: rejected, the
+  audit reports Dynamic Type as partially unsupported inside it.

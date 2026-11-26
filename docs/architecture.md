@@ -90,8 +90,11 @@ struct ContactsScreen: View {
   global store) inside a type.
 - All user-visible text in `Resources/Localizable.xcstrings`; give meaningful elements
   accessibility labels.
-- A screen with no state yet (like the welcome screen) is only the stateless screen view, shown by
-  `MonicaApp`; the `Route` and view model arrive with the first state to hold.
+- A screen with no state yet is only the stateless screen view, shown by `MonicaApp`; the `Route`
+  and view model arrive with the first state to hold (as `WelcomeRoute` did with the instance
+  sheet).
+- Small preferences (the instance address) live in `UserDefaults`, injected into the repository
+  that owns them (`InstanceRepository`), never read through `UserDefaults.standard` in a type.
 - Use an Apple framework (SwiftData, BackgroundTasks, ...) or a Swift package only when a feature
   needs it, and justify a package in the feature's `plan.md`.
 

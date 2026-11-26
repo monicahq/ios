@@ -8,8 +8,9 @@
 
 Show the welcome screen of the `Welcome Android.dc.html` design, adapted to iOS, as the app's first
 screen: instance settings button, Monica logo and name, panda illustration, title, description,
-"Sign up" and "Log in" buttons, and the current instance line. Nothing is wired yet: every control
-does nothing. The screen ships in English (source and fallback) and French, offered in the app's
+"Sign up" and "Log in" buttons, and the current instance line. "Sign up" and "Log in" do nothing
+yet. The settings button and the instance line open a sheet to choose the Monica instance, whose
+address is kept in `UserDefaults` (User Story 4). The screen ships in English (source and fallback) and French, offered in the app's
 Language setting. The Monica design system palette (light and dark) lives in the asset catalog.
 Being the first feature, it also sets up the coverage gate that the constitution deferred to "the
 first feature" and the automated accessibility audit that principle VII requires in UI tests. It
@@ -21,7 +22,7 @@ mirrors the Android app's welcome screen.
 
 **Primary Dependencies**: SwiftUI, Foundation. No Swift package.
 
-**Storage**: N/A (the instance address is a constant in this feature)
+**Storage**: `UserDefaults`, one key `instance_url`, behind `InstanceRepository`
 
 **Testing**: Swift Testing (`MonicaTests`), XCUITest with `performAccessibilityAudit()`
 (`MonicaUITests`), `xccov` for coverage
@@ -34,7 +35,8 @@ mirrors the Android app's welcome screen.
 
 **Constraints**: no network, no third-party code, every text translated, WCAG 2.2 AA
 
-**Scale/Scope**: one screen, 2 languages, ~10 strings, 1 vector image, 1 bitmap, 8 colour sets
+**Scale/Scope**: one screen and one sheet, 2 languages, ~18 strings, 1 vector image, 1 bitmap,
+8 colour sets
 
 ## Constitution Check
 
@@ -43,13 +45,13 @@ mirrors the Android app's welcome screen.
 | Principle | Status | How this plan complies |
 | --- | --- | --- |
 | Product context | PASS | No server call; wording and translations reuse the web app's and the Android app's (`Sign up` / `Inscription`, `Log in` / `Connexion`, `Instance settings` / `Paramètres de l'instance`); default instance `https://app.monicahq.com`. |
-| I. Simplicity | PASS | No view model, repository or navigation: the screen has no state and no data yet (see research R1). One pure function for the host, one for the highlight. No dependency. |
-| II. Apple practices | PASS | Stateless `WelcomeScreen` taking its values and closures; standard `Button`s with styles; strings in the String Catalog; colours in the asset catalog. |
-| III. Unit tests | PASS | `instanceHost`, `highlight` and the string-parity guard are unit tested; coverage gate set up at 80% for non-UI code. |
-| IV. UI tests | PASS | XCUITest for every element, their order, every control, French, unsupported language, dark mode, largest text size; end-to-end tests of the app launch. |
+| I. Simplicity | PASS | One view model and one repository, both needed by the instance sheet (research R11, R12); no protocol in front of `UserDefaults`, no navigation, no dependency. Pure functions for the host, the address normalisation and the highlight. |
+| II. Apple practices | PASS | `WelcomeRoute` owns an `@Observable` `@MainActor` `WelcomeViewModel` exposing one `state`; stateless `WelcomeScreen` and `InstanceSheetView` taking state and closures; repository injected through the initializer; standard `Button`s with styles; strings in the String Catalog; colours in the asset catalog. |
+| III. Unit tests | PASS | `instanceHost`, `normalizeInstanceURL`, `InstanceRepository`, every state and event of `WelcomeViewModel`, `highlight` and the string-parity guard are unit tested; coverage gate at 80% for non-UI code. |
+| IV. UI tests | PASS | XCUITest for every element, their order, every control, French, unsupported language, dark mode, largest text size; every sheet interaction (save, Return, cancel, pull down, reset, error); end-to-end tests of the app launch and of an address kept after relaunching. |
 | V. Native only | PASS | SwiftUI, SF Symbols, asset catalog, no WebView. |
 | VI. Multilingual | PASS | String Catalog with English and French; parity test fails the build when a key or placeholder is missing in a language. |
-| VII. Accessibility | PASS | Header trait, decorative logo hidden, described illustration, labelled icon button, 44 pt targets, colour tokens only, text styles, scrolling content, accessibility audit in light and dark. |
+| VII. Accessibility | PASS | Header trait, decorative logo hidden, described illustration, labelled icon button, 44 pt targets, colour tokens only, text styles, scrolling content, accessibility audit in light and dark, for the screen and the sheet (also with its error). Sheet error said with text and icon and announced. |
 
 Post-design re-check (after Phase 1): unchanged, all PASS. No Complexity Tracking entry needed.
 
@@ -72,25 +74,32 @@ specs/001-welcome-screen/
 
 ```text
 Monica/
-├── MonicaApp.swift                  # shows WelcomeScreen with empty closures
+├── MonicaApp.swift                  # creates the repository and shows WelcomeRoute
 ├── Instance/
-│   └── Instance.swift               # defaultInstanceURL, instanceHost()
+│   ├── Instance.swift               # defaultInstanceURL, instanceHost(), normalizeInstanceURL()
+│   └── InstanceRepository.swift     # the chosen address, in UserDefaults
 ├── Welcome/
-│   ├── WelcomeScreen.swift          # stateless screen + previews
+│   ├── WelcomeScreen.swift          # WelcomeRoute + stateless screen + previews
+│   ├── InstanceSheetView.swift      # stateless instance sheet + previews
+│   ├── WelcomeUiState.swift         # WelcomeUiState, InstanceSheetState
+│   ├── WelcomeViewModel.swift
 │   └── Highlight.swift              # styles the host inside the translated line
 ├── Theme/
-│   └── ButtonStyles.swift           # filled and outlined buttons of the design system
+│   └── ButtonStyles.swift           # filled, outlined and text buttons of the design system
 └── Resources/
     ├── Assets.xcassets/             # AppIcon, Logo (SVG), PandaWelcome (HEIC), Colors/*
     └── Localizable.xcstrings        # English and French
 MonicaTests/
-├── Instance/InstanceTests.swift
+├── Instance/InstanceTests.swift            # instanceHost, normalizeInstanceURL
+├── Instance/InstanceRepositoryTests.swift
+├── Welcome/WelcomeViewModelTests.swift
 ├── Welcome/HighlightTests.swift
 └── LocalizationParityTests.swift
 MonicaUITests/
-├── Launch.swift                     # launch in a language or text size, scroll to an element
-├── MonicaAppUITests.swift           # end to end: app opens on the welcome screen
-└── WelcomeScreenUITests.swift       # elements, order, controls, French, dark, text size, audit
+├── Launch.swift                     # launch in a language, text size and preferences store
+├── MonicaAppUITests.swift           # end to end: welcome screen, instance kept after relaunch
+├── WelcomeScreenUITests.swift       # elements, order, controls, French, dark, text size, audit
+└── InstanceSheetUITests.swift       # every sheet interaction, French, text size, audit
 scripts/check-coverage.sh            # coverage gate
 .github/workflows/ci.yml             # Unit tests job also runs the coverage gate
 ```

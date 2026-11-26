@@ -15,3 +15,25 @@ func instanceHost(_ url: String) -> String {
     }
     return String(host)
 }
+
+/// Turns what a person typed into the address to store, or nil when it is not an address the app
+/// can use. Empty means the default instance; a missing scheme means `https://`. Plain `http` is
+/// accepted because self-hosted instances on a home network often have no certificate.
+func normalizeInstanceURL(_ input: String) -> String? {
+    let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty {
+        return defaultInstanceURL
+    }
+    if trimmed.contains(where: \.isWhitespace) {
+        return nil
+    }
+    var url = Substring(trimmed.contains("://") ? trimmed : "https://\(trimmed)")
+    while url.hasSuffix("/") {
+        url = url.dropLast()
+    }
+    guard let components = URLComponents(string: String(url)),
+          let scheme = components.scheme?.lowercased(), ["http", "https"].contains(scheme),
+          let host = components.host, !host.isEmpty
+    else { return nil }
+    return String(url)
+}
