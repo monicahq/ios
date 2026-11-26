@@ -1,0 +1,11 @@
+name: Set up build environment
+description: Install the tools pinned in mise.toml and generate the Xcode project
+
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@v5
+
+    - name: Generate the Xcode project
+      shell: bash
+      run: xcodegen generate

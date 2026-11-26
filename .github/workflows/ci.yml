@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
+
+jobs:
+  format:
+    name: Format
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - name: Check formatting (SwiftFormat)
+        run: swiftformat --lint .
+
+  lint:
+    name: Lint
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - name: SwiftLint
+        run: swiftlint --strict --reporter github-actions-logging
+
+  unit-tests:
+    name: Unit tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Unit tests
+        run: >
+          xcodebuild test -project Monica.xcodeproj -scheme Monica
+          -destination "$DESTINATION" -only-testing:MonicaTests
+          -resultBundlePath build/unit-tests.xcresult
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-results
+          path: build/unit-tests.xcresult
+          if-no-files-found: ignore
+
+  build:
+    name: Build
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: Build debug for the simulator
+        run: >
+          xcodebuild build -project Monica.xcodeproj -scheme Monica -configuration Debug
+          -destination 'generic/platform=iOS Simulator' -derivedDataPath build/DerivedData
+      - name: Build release for devices (unsigned)
+        run: >
+          xcodebuild build -project Monica.xcodeproj -scheme Monica -configuration Release
+          -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO
+      - name: Upload debug app
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-debug-simulator
+          path: build/DerivedData/Build/Products/Debug-iphonesimulator/Monica.app
+
+  ui-tests:
+    name: UI tests
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - name: UI tests on the simulator
+        run: >
+          xcodebuild test -project Monica.xcodeproj -scheme Monica
+          -destination "$DESTINATION" -only-testing:MonicaUITests
+          -resultBundlePath build/ui-tests.xcresult
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-results
+          path: build/ui-tests.xcresult
+          if-no-files-found: ignore

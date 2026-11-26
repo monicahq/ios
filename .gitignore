@@ -1,0 +1,23 @@
+# Xcode project, generated from project.yml by XcodeGen
+*.xcodeproj/
+*.xcworkspace/
+!*.xcodeproj/project.xcworkspace/
+
+# Xcode build output
+build/
+DerivedData/
+*.xcresult
+xcuserdata/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Spec Kit generated state
+__pycache__/
+.specify/extensions/.cache/
+.specify/extensions/*/.specify-dev/
+specs/**/.spec-context.json

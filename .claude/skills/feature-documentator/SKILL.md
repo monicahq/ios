@@ -1,0 +1,26 @@
+---
+name: feature-documentator
+description: Create and maintain a single Markdown file that contains a chronological list of every feature and improvement implemented during development. Use after every feature.
+---
+
+# Feature bullet list
+
+Maintain `docs/FEATURES.md`, the chronological list of every feature and improvement implemented
+during development.
+
+Rules:
+
+* Add one bullet point for every meaningful change.
+* Keep each bullet point to a single concise sentence.
+* Do not group multiple changes into one bullet.
+* Do not explain implementation details.
+* Do not write paragraphs or sub-bullets.
+* Use clear, user-facing descriptions whenever possible.
+* Append new entries to the end of the list in chronological order.
+* Indicate the screen or area of the app before the description, if applicable.
+
+Example:
+
+* Sign in: Added connection to a Monica instance with an API token.
+* Contacts: Added the list of contacts.
+* Contacts/details: Added the birthday of a contact.

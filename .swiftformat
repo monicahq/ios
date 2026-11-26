@@ -1,0 +1,7 @@
+--swiftversion 6.0
+--exclude build,DerivedData,.specify,.claude
+--maxwidth 140
+--indent 4
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first

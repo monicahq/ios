@@ -1,0 +1,29 @@
+schema_version: "1.0"
+
+extension:
+  id: branch
+  name: "Feature Branch From Main"
+  version: "1.0.0"
+  description: "Start every specification on a new YYYY-MM-DD-name branch created from an up-to-date main"
+  author: monicahq
+  repository: https://github.com/monicahq/ios
+  license: MIT
+
+requires:
+  speckit_version: ">=0.9.0"
+
+provides:
+  commands:
+    - name: speckit.branch.start
+      file: commands/speckit.branch.start.md
+      description: "Update main and create the feature branch before writing a specification"
+
+hooks:
+  before_specify:
+    command: speckit.branch.start
+    optional: false
+    description: "Create the feature branch from an up-to-date main"
+
+tags:
+  - "git"
+  - "branching"

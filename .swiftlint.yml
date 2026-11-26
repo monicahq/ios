@@ -1,0 +1,18 @@
+included:
+  - Monica
+  - MonicaTests
+  - MonicaUITests
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - empty_count
+  - first_where
+  - sorted_first_last
+disabled_rules:
+  # SwiftFormat owns formatting; these rules would contradict it.
+  - trailing_comma
+  - opening_brace
+line_length:
+  warning: 140
+  ignores_comments: true
+  ignores_urls: true
