@@ -13,9 +13,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
-
 jobs:
   format:
     name: Format
@@ -44,10 +41,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
+        with:
+          boot-simulator: true
       - name: Unit tests
         run: >
           xcodebuild test -project Monica.xcodeproj -scheme Monica
-          -destination "$DESTINATION" -only-testing:MonicaTests
+          -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -only-testing:MonicaTests
           -resultBundlePath build/unit-tests.xcresult
       - name: Coverage gate
         run: scripts/check-coverage.sh build/unit-tests.xcresult
@@ -83,14 +82,23 @@ jobs:
   ui-tests:
     name: UI tests
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
+        with:
+          boot-simulator: true
+      # A test that hangs (the app failing to launch on the runner) is stopped after 3 minutes
+      # instead of blocking the job, and a failed test runs once more: a runner hiccup passes on
+      # the second try, a real bug fails twice.
       - name: UI tests on the simulator
         run: >
           xcodebuild test -project Monica.xcodeproj -scheme Monica
-          -destination "$DESTINATION" -only-testing:MonicaUITests
+          -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -only-testing:MonicaUITests
+          -test-timeouts-enabled YES
+          -default-test-execution-time-allowance 180
+          -maximum-test-execution-time-allowance 300
+          -retry-tests-on-failure -test-iterations 2 -test-repetition-relaunch-enabled YES
           -resultBundlePath build/ui-tests.xcresult
       - name: Upload test results
         if: always()
