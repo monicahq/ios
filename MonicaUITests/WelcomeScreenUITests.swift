@@ -11,8 +11,13 @@ final class WelcomeScreenUITests: XCTestCase {
     }
 
     @MainActor
-    private func open(language: String? = nil, textSize: String? = nil) -> XCUIApplication {
-        let app = launchApp(language: language, textSize: textSize)
+    private func open(
+        language: String? = nil,
+        textSize: String? = nil,
+        server: String = "compatible",
+        browser: String = "allow"
+    ) -> XCUIApplication {
+        let app = launchApp(language: language, textSize: textSize, server: server, browser: browser)
         XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 10))
         return app
     }
@@ -55,17 +60,6 @@ final class WelcomeScreenUITests: XCTestCase {
         let tops = elements.map(\.frame.minY)
 
         XCTAssertEqual(tops, tops.sorted())
-    }
-
-    @MainActor
-    func testTappingSignUpAndLogInDoesNothingYet() {
-        let app = open()
-
-        app.buttons["Sign up"].scrolledTo(in: app).tap()
-        app.buttons["Log in"].scrolledTo(in: app).tap()
-
-        XCTAssertTrue(app.staticTexts[title].exists)
-        XCTAssertFalse(app.staticTexts["Instance URL"].exists)
     }
 
     @MainActor
@@ -149,5 +143,138 @@ final class WelcomeScreenUITests: XCTestCase {
 
             try app.auditAccessibility()
         }
+    }
+
+    // MARK: Logging in and signing up
+
+    @MainActor
+    private func tap(_ label: String, in app: XCUIApplication) {
+        app.buttons[label].scrolledTo(in: app).tap()
+    }
+
+    @MainActor
+    private func expectMessage(_ message: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.staticTexts[message].waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(app.staticTexts[title].exists, file: file, line: line)
+    }
+
+    @MainActor
+    func testLogInShowsTheProgressThenTheHome() {
+        let app = open(browser: "slow")
+
+        tap("Log in", in: app)
+
+        // Read together with the progress indicator, so the label holds more than the text.
+        let progress = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Connecting to app.monicahq.com…")).firstMatch
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[homeGreeting].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func testClosingTheBrowserSaysSignInWasCancelled() {
+        let app = open(browser: "cancel")
+
+        tap("Log in", in: app)
+
+        expectMessage("Sign-in was cancelled. Log in again when you're ready.", in: app)
+        XCTAssertTrue(app.buttons["Log in"].isEnabled)
+    }
+
+    @MainActor
+    func testDenyingAccessSaysSo() {
+        let app = open(browser: "deny")
+
+        tap("Log in", in: app)
+
+        expectMessage("You did not allow access. Log in again to allow it.", in: app)
+    }
+
+    @MainActor
+    func testAnUnreachableInstanceIsSaidBeforeOpeningAnything() {
+        let app = open(server: "unreachable")
+
+        tap("Log in", in: app)
+
+        expectMessage("Can't reach this instance. Check the address and your connection, then try again.", in: app)
+    }
+
+    @MainActor
+    func testSignUpOnAClosedInstanceSaysSo() {
+        let app = open(server: "registrationClosed")
+
+        tap("Sign up", in: app)
+
+        expectMessage("This instance doesn't accept new accounts. Ask its administrator.", in: app)
+    }
+
+    @MainActor
+    func testClosingTheBrowserAfterSignUpExplainsTheEmail() {
+        let app = open(browser: "cancel")
+
+        tap("Sign up", in: app)
+
+        expectMessage(
+            "Not finished yet? Open the link in the email Monica sent you to confirm your address: "
+                + "it brings you back here, signed in.",
+            in: app
+        )
+    }
+
+    @MainActor
+    func testShowsTheErrorInFrench() {
+        let app = open(language: "fr", browser: "cancel")
+
+        tap("Connexion", in: app)
+
+        XCTAssertTrue(app.staticTexts["La connexion a été annulée. Reconnectez-vous quand vous voulez."].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func testPassesTheAccessibilityAuditWithAnError() throws {
+        let app = open(browser: "cancel")
+        tap("Log in", in: app)
+        expectMessage("Sign-in was cancelled. Log in again when you're ready.", in: app)
+
+        try app.auditAccessibility()
+    }
+
+    @MainActor
+    func testPassesTheAccessibilityAuditWithAnErrorInDarkAppearance() throws {
+        try inDarkAppearance {
+            let app = open(browser: "deny")
+            tap("Log in", in: app)
+            expectMessage("You did not allow access. Log in again to allow it.", in: app)
+
+            try app.auditAccessibility()
+        }
+    }
+
+    @MainActor
+    func testPassesTheAccessibilityAuditWhileSigningIn() throws {
+        let app = open(browser: "slow")
+        tap("Log in", in: app)
+        let progress = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Connecting to app.monicahq.com…")).firstMatch
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+
+        // Everything but contrast: while signing in, the buttons are dimmed because they cannot be
+        // used, which WCAG exempts, and the audit reports them without naming the element. The
+        // same screen's contrast is audited when nothing is disabled.
+        try app.auditAccessibility(for: XCUIAccessibilityAuditType.all.subtracting(.contrast))
+    }
+
+    @MainActor
+    func testTheLongestMessageIsReachableWithTheLargestTextSize() {
+        let app = open(textSize: "UICTContentSizeCategoryAccessibilityXXXL", browser: "cancel")
+        tap("Sign up", in: app)
+
+        let message = app.staticTexts[
+            "Not finished yet? Open the link in the email Monica sent you to confirm your address: "
+                + "it brings you back here, signed in."
+        ]
+        XCTAssertTrue(message.waitForExistence(timeout: 10))
+        XCTAssertTrue(message.scrolledTo(in: app).isHittable)
+        XCTAssertTrue(app.buttons["Log in"].scrolledTo(in: app).isHittable)
     }
 }

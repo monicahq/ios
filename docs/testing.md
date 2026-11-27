@@ -68,6 +68,25 @@ rather than a fake behind a protocol that would exist only for the tests. UI tes
 variable (read in Debug builds only), and a test passes the same `preferences` to a second launch
 to check what the app kept.
 
+## A fake Monica
+
+The app never reaches the network in tests. `Monica/Debug/FakeMonica.swift` (Debug builds only)
+plays a Monica instance in memory through a `URLProtocol`: status, OAuth metadata, token,
+revocation and `/api/v1/me`.
+
+- Unit tests create a `FakeMonica()` per test, on a host of its own so tests running at the same
+  time never share one, change its `settings` (unreachable, refused renewal, another issuer...) or
+  answer a request themselves with `settings.override`, and read the `requests` it received.
+  `MonicaTests/Support/Fakes.swift` wires it to the app's types with an in-memory Keychain
+  (`FakeSecretStore`) and a clock moved by hand (`FakeClock`), in `Harness`.
+- UI tests pick a scenario with `launchApp(server:browser:)`: the app then answers every host with
+  that fake (compatible, unreachable, notMonica, monicaTooOld, appTooOld, registrationClosed,
+  renewalRefused, shortLived, notAllowed, offlineAfterSignIn) and replaces iOS's authentication
+  sheet, which UI tests cannot drive, with an answer (allow, deny, cancel, or slow). Each launch
+  also gets a Keychain service of its own, from `MONICA_DEFAULTS_SUITE`.
+- The real sheet and the real instance are checked by hand before a pull request (see the
+  feature's `quickstart.md`).
+
 ## Languages
 
 `LocalizationParityTests` fails when a string of the catalog is missing, or loses a placeholder, in

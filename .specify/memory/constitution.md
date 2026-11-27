@@ -7,7 +7,8 @@
   feature of the web app, plus what only makes sense on a phone (notifications, sharing, the
   device's contacts, widgets, offline reading, camera).
 - The Monica server is the source of truth for data and business rules. The app talks to it
-  **only through its public JSON API** (`/api/v1`, Sanctum bearer tokens, OpenAPI document at
+  **only through its public JSON API** (`/api/v1`, signed in with the OAuth access tokens Monica
+  issues to its mobile apps, OpenAPI document at
   `/docs/api/v1/openapi`). It MUST NOT re-implement rules the server already enforces.
 - The app uses the **same concepts and the same words** as the web app (account, vault, contact,
   reminder, template, ...). A screen that exists on the web behaves the same way on iOS unless
@@ -183,4 +184,4 @@ of their own memories because of how they use their phone.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.3.1 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.3.2 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-27

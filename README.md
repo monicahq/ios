@@ -32,6 +32,13 @@ swiftlint --strict                                                              
 swiftformat .                                                                     # format
 ```
 
+## Running against a local Monica
+
+Debug builds accept `http://` instance addresses, so the app can sign in to a Monica running on
+your machine: run Monica (see its README), then enter its address (for example
+`http://localhost:8000`) in the instance sheet. Release builds only accept `https://`. Signing in
+needs a Monica that knows the iOS app (`minimum_ios_version` in its `/api/v1/status`).
+
 ## Principles
 
 The project rules are in the [constitution](.specify/memory/constitution.md). In short: simple code,

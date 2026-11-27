@@ -98,6 +98,29 @@ struct ContactsScreen: View {
 - Use an Apple framework (SwiftData, BackgroundTasks, ...) or a Swift package only when a feature
   needs it, and justify a package in the feature's `plan.md`.
 
+## Signing in and the session
+
+People sign in on the instance's own web pages (OAuth 2.0 with PKCE), never in the app: see
+`specs/002-login-registration`.
+
+- `Auth/SessionManager` (`@MainActor @Observable`) is the only owner of the session. It starts and
+  completes sign-in, renews access (one renewal at a time, every caller awaits it), signs out, and
+  exposes `state` (signed in or out, and why). No other type reads a token; screens call
+  `authorizedGet` or a method of the session manager.
+- `Auth/MonicaClient` talks to one instance. It is where tokens are kept at home: a bearer token
+  goes only to the instance's own origin, redirects are never followed, the session has no
+  cookies or cache. A client stops working once its session ends.
+- `Instance/InstanceChecker` reads the instance's status and OAuth metadata before an address is
+  saved and before each sign-in: every sign-in address comes from the instance.
+- Secrets (the session, a sign-in in progress, a logout to tell) live in the Keychain through
+  `Auth/SecretStore`, readable on this device only. A fresh install wipes what an earlier install
+  left there.
+- `RootView` shows the welcome screen or the home from the session state, and receives the
+  return address (`com.monicahq.ios:/oauth/callback`, declared in `Config/Info.plist`) when iOS
+  opens the app with it.
+- Release builds talk to instances over HTTPS only; Debug builds also accept `http` (see
+  `Config/Info-Debug.plist`) for a Monica on the developer's machine.
+
 ## Languages
 
 - Every text lives in `Monica/Resources/Localizable.xcstrings`, under a key shared with the

@@ -38,11 +38,13 @@ struct InstanceSheetView: View {
                 layout {
                     Button("instance_sheet_reset", action: onReset)
                         .buttonStyle(TextButtonStyle())
+                        .disabled(state.isChecking)
                     Spacer(minLength: 0)
                     Button("instance_sheet_cancel", action: onDismiss)
                         .buttonStyle(TextButtonStyle())
                     Button("instance_sheet_save", action: onSave)
                         .buttonStyle(PrimaryButtonStyle())
+                        .disabled(state.isChecking)
                         .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
                 }
             }
@@ -55,8 +57,21 @@ struct InstanceSheetView: View {
         .presentationBackground(Color.card)
         // Focus stays on Save after a refused address: VoiceOver says why, at every refusal.
         .onChange(of: state.refusals) {
-            AccessibilityNotification.Announcement(String(localized: "instance_sheet_invalid")).post()
+            if let error = state.error {
+                AccessibilityNotification.Announcement(String(localized: error.message)).post()
+            }
         }
+        .onChange(of: state.isChecking) {
+            if state.isChecking {
+                AccessibilityNotification.Announcement(checking).post()
+            }
+        }
+    }
+}
+
+extension InstanceSheetView {
+    private var checking: String {
+        String(format: String(localized: "instance_sheet_checking"), instanceHost(state.draft))
     }
 }
 
@@ -98,8 +113,9 @@ private struct AddressField: View {
             .autocorrectionDisabled()
             .submitLabel(.done)
             .focused($isFocused)
+            // The address being checked stays the one shown.
+            .disabled(state.isChecking)
             .accessibilityLabel(Text("instance_sheet_address"))
-            .accessibilityHint(state.isError ? Text("instance_sheet_invalid") : Text(verbatim: ""))
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .frame(minHeight: 44)
@@ -110,12 +126,25 @@ private struct AddressField: View {
             // the field. VoiceOver and Voice Control act on the field directly.
             .contentShape(RoundedRectangle(cornerRadius: 6))
             .onTapGesture { isFocused = true }
-            if state.isError {
+            if state.isChecking {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text(String(format: String(localized: "instance_sheet_checking"), instanceHost(state.draft)))
+                }
+                .font(.footnote)
+                .foregroundStyle(Color.ink)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .combine)
+            } else if let error = state.error {
                 // An icon and a sentence, not a colour, say what is wrong.
-                Label("instance_sheet_invalid", systemImage: "exclamationmark.circle")
-                    .font(.footnote)
-                    .foregroundStyle(Color.ink)
-                    .fixedSize(horizontal: false, vertical: true)
+                Label {
+                    Text(error.message)
+                } icon: {
+                    Image(systemName: "exclamationmark.circle")
+                }
+                .font(.footnote)
+                .foregroundStyle(Color.ink)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -133,7 +162,7 @@ private struct AddressField: View {
 #Preview("Error, dark") {
     Color.page.sheet(isPresented: .constant(true)) {
         InstanceSheetView(
-            state: InstanceSheetState(draft: "not an address", isError: true),
+            state: InstanceSheetState(draft: "not an address", error: .invalidAddress),
             onDraftChange: { _ in }, onReset: {}, onDismiss: {}, onSave: {}
         )
     }

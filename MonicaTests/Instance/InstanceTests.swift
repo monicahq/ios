@@ -1,3 +1,4 @@
+import Foundation
 @testable import Monica
 import Testing
 
@@ -32,33 +33,57 @@ struct InstanceTests {
 }
 
 struct NormalizeInstanceURLTests {
-    @Test func `keeps a complete https address`() {
-        #expect(normalizeInstanceURL("https://monica.example.com") == "https://monica.example.com")
+    private func normalize(_ input: String, allowsHTTP: Bool = false) -> Result<String, AuthError> {
+        normalizeInstanceURL(input, allowsHTTP: allowsHTTP)
     }
 
-    @Test func `accepts plain http for home servers`() {
-        #expect(normalizeInstanceURL("http://192.168.1.10:8080/monica") == "http://192.168.1.10:8080/monica")
+    @Test func `keeps a complete https address`() {
+        #expect(normalize("https://monica.example.com") == .success("https://monica.example.com"))
+    }
+
+    @Test func `refuses plain http, asking for https`() {
+        #expect(normalize("http://192.168.1.10:8080/monica") == .failure(.httpsRequired))
+    }
+
+    @Test func `accepts plain http when the build allows it`() {
+        #expect(normalize("http://192.168.1.10:8080/monica", allowsHTTP: true) == .success("http://192.168.1.10:8080/monica"))
     }
 
     @Test func `adds https when the scheme is missing`() {
-        #expect(normalizeInstanceURL("monica.example.com") == "https://monica.example.com")
+        #expect(normalize("monica.example.com") == .success("https://monica.example.com"))
     }
 
     @Test func `removes the trailing slashes`() {
-        #expect(normalizeInstanceURL("https://monica.example.com//") == "https://monica.example.com")
+        #expect(normalize("https://monica.example.com//") == .success("https://monica.example.com"))
     }
 
     @Test func `ignores surrounding spaces`() {
-        #expect(normalizeInstanceURL("  https://monica.example.com \n") == "https://monica.example.com")
+        #expect(normalize("  https://monica.example.com \n") == .success("https://monica.example.com"))
     }
 
     @Test(arguments: ["", "   "])
     func `an empty address means the default instance`(input: String) {
-        #expect(normalizeInstanceURL(input) == defaultInstanceURL)
+        #expect(normalize(input) == .success(defaultInstanceURL))
     }
 
-    @Test(arguments: ["not an address", "ftp://monica.example.com", "https://", "monica example.com"])
+    @Test(arguments: [
+        "not an address", "ftp://monica.example.com", "https://", "monica example.com",
+        "https://pam:secret@monica.example.com",
+    ])
     func `refuses what is not a web address with a host`(input: String) {
-        #expect(normalizeInstanceURL(input) == nil)
+        #expect(normalize(input) == .failure(.invalidAddress))
+    }
+}
+
+struct OriginTests {
+    @Test func `the same origin whatever the spelling`() throws {
+        #expect(try origin(of: url("https://Monica.Example.com/oauth")) == origin(of: url("https://monica.example.com:443/x")))
+    }
+
+    @Test func `another port, scheme or host is another origin`() throws {
+        let base = try origin(of: url("https://monica.example.com"))
+        #expect(try origin(of: url("https://monica.example.com:8443")) != base)
+        #expect(try origin(of: url("http://monica.example.com")) != base)
+        #expect(try origin(of: url("https://monica.example.com.evil.test")) != base)
     }
 }

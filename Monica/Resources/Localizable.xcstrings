@@ -19,6 +19,414 @@
         }
       }
     },
+    "auth_error_app_too_old" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance needs a newer version of the app. Update it from the App Store."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette instance demande une version plus récente de l'app. Mettez-la à jour depuis l'App Store."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_cancelled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in was cancelled. Log in again when you're ready."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion a été annulée. Reconnectez-vous quand vous voulez."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_certificate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance's security certificate isn't valid. Ask its administrator to fix it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le certificat de sécurité de cette instance n'est pas valide. Demandez à son administrateur de le corriger."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_denied" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You did not allow access. Log in again to allow it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n'avez pas autorisé l'accès. Reconnectez-vous pour l'autoriser."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_https_required" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance must use HTTPS. Enter an address that starts with https://"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette instance doit utiliser HTTPS. Saisissez une adresse qui commence par https://"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_invalid_address" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter an address like https://monica.example.com"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez une adresse comme https://monica.exemple.fr"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_monica_too_old" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Monica is too old for the app. Ask its administrator to update it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce Monica est trop ancien pour l'app. Demandez à son administrateur de le mettre à jour."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_moved" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance has moved. Enter its new address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette instance a changé d'adresse. Saisissez sa nouvelle adresse."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_no_app_sign_in" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance doesn't support signing in from the app. Ask its administrator."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette instance ne permet pas de se connecter depuis l'app. Demandez à son administrateur."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_not_allowed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're not allowed to do this."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n'avez pas le droit de faire cela."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_not_monica" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This address isn't a Monica instance. Check the address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette adresse n'est pas une instance Monica. Vérifiez l'adresse."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_registration_closed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This instance doesn't accept new accounts. Ask its administrator."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette instance n'accepte pas de nouveaux comptes. Demandez à son administrateur."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unexpected answer from your instance. Try again later."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réponse inattendue de votre instance. Réessayez plus tard."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_session_expired" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your session expired. Log in again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre session a expiré. Reconnectez-vous."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_session_revoked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your session was ended. Log in again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre session a été fermée. Reconnectez-vous."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_sign_in_expired" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This sign-in took too long and expired. Log in again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette connexion a pris trop de temps et a expiré. Reconnectez-vous."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_sign_in_failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in failed. Try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion a échoué. Réessayez."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_sign_up_unfinished" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not finished yet? Open the link in the email Monica sent you to confirm your address: it brings you back here, signed in."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore terminé ? Ouvrez le lien de l'email envoyé par Monica pour confirmer votre adresse : il vous ramène ici et ouvre votre session."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The instance took too long to answer. Try again in a moment."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'instance a mis trop de temps à répondre. Réessayez dans un instant."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "auth_error_unreachable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't reach this instance. Check the address and your connection, then try again."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de joindre cette instance. Vérifiez l'adresse et votre connexion, puis réessayez."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "home_connected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected to %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecté à %@"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "home_greeting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hello, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour, %@"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "home_greeting_no_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hello"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour"
+          }
+        }
+      }
+    },
+    "home_log_out" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déconnexion"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
     "instance_sheet_address" : {
       "comment" : "Label of the instance address field.",
       "extractionState" : "manual",
@@ -55,6 +463,23 @@
         }
       }
     },
+    "instance_sheet_checking" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking %@…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérification de %@…"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
     "instance_sheet_description" : {
       "comment" : "Explanation under the address field of the instance sheet.",
       "extractionState" : "manual",
@@ -69,24 +494,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'adresse du serveur Monica auquel l'app se connecte. Laissez la valeur par défaut pour utiliser le service hébergé, ou saisissez celle de votre propre instance."
-          }
-        }
-      }
-    },
-    "instance_sheet_invalid" : {
-      "comment" : "Shown and read aloud when the typed instance address cannot be used.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter an address like https://monica.example.com"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saisissez une adresse comme https://monica.exemple.fr"
           }
         }
       }
@@ -162,6 +569,108 @@
           }
         }
       }
+    },
+    "instance_switch_confirm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch and log out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changer et se déconnecter"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "instance_switch_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switching instance logs you out of %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changer d'instance vous déconnecte de %@."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "instance_switch_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch instance?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changer d'instance ?"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "log_out_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You will need to log in again to use Monica on this phone."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous devrez vous reconnecter pour utiliser Monica sur ce téléphone."
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "log_out_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter ?"
+          }
+        }
+      },
+      "extractionState" : "manual"
+    },
+    "welcome_connecting" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to %@…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion à %@…"
+          }
+        }
+      },
+      "extractionState" : "manual"
     },
     "welcome_description" : {
       "extractionState" : "manual",

@@ -11,8 +11,8 @@ final class InstanceSheetUITests: XCTestCase {
 
     /// Opens the app and the sheet through the settings button.
     @MainActor
-    private func openSheet(language: String? = nil, textSize: String? = nil) -> XCUIApplication {
-        let app = launchApp(language: language, textSize: textSize)
+    private func openSheet(language: String? = nil, textSize: String? = nil, server: String = "compatible") -> XCUIApplication {
+        let app = launchApp(language: language, textSize: textSize, server: server)
         let settings = app.buttons[language == "fr" ? "Paramètres de l'instance" : "Instance settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 10))
         settings.tap()
@@ -206,5 +206,54 @@ final class InstanceSheetUITests: XCTestCase {
         app.textFields["Address"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0)).withOffset(CGVector(dx: 0, dy: -8)).tap()
 
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+    }
+
+    // MARK: Checking the instance before saving
+
+    @MainActor
+    private func expectRefusal(_ message: String, server: String, file: StaticString = #filePath, line: UInt = #line) {
+        let app = openSheet(server: server)
+
+        app.textFields["Address"].replaceText(with: "monica.example.com")
+        app.buttons["Save"].tap()
+
+        XCTAssertTrue(app.staticTexts[message].waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(app.staticTexts[sheetTitle].exists, file: file, line: line)
+        app.buttons["Cancel"].tap()
+        waitForSheetToClose(app)
+        XCTAssertTrue(app.buttons["Instance: app.monicahq.com"].exists, file: file, line: line)
+    }
+
+    @MainActor
+    func testRefusesWhatIsNotMonica() {
+        expectRefusal("This address isn't a Monica instance. Check the address.", server: "notMonica")
+    }
+
+    @MainActor
+    func testRefusesAMonicaTooOldForTheApp() {
+        expectRefusal("This Monica is too old for the app. Ask its administrator to update it.", server: "monicaTooOld")
+    }
+
+    @MainActor
+    func testAsksForANewerAppWhenTheInstanceRequiresOne() {
+        expectRefusal("This instance needs a newer version of the app. Update it from the App Store.", server: "appTooOld")
+    }
+
+    @MainActor
+    func testSaysWhenTheInstanceCannotBeReached() {
+        expectRefusal(
+            "Can't reach this instance. Check the address and your connection, then try again.",
+            server: "unreachable"
+        )
+    }
+
+    @MainActor
+    func testPassesTheAccessibilityAuditWithARefusedInstance() throws {
+        let app = openSheet(server: "notMonica")
+        app.textFields["Address"].replaceText(with: "monica.example.com")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts["This address isn't a Monica instance. Check the address."].waitForExistence(timeout: 10))
+
+        try app.auditAccessibility()
     }
 }

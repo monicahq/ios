@@ -1,20 +1,65 @@
+import AuthenticationServices
 import SwiftUI
 
-/// Connects `WelcomeScreen` to its `WelcomeViewModel`. Signing up and logging in come later.
+/// Connects `WelcomeScreen` to its `WelcomeViewModel`, and opens the instance's sign-in page in
+/// iOS's authentication sheet when the view model asks for it.
 struct WelcomeRoute: View {
     @State var viewModel: WelcomeViewModel
+    /// Replaces the authentication sheet in UI tests; nil in the app.
+    let browser: Browser?
+
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     var body: some View {
         WelcomeScreen(
             state: viewModel.state,
-            onSignUp: {},
-            onLogIn: {},
+            onSignUp: { Task { await viewModel.signUp() } },
+            onLogIn: { Task { await viewModel.logIn() } },
             onOpenInstanceSheet: { viewModel.openInstanceSheet() },
             onDraftChange: { viewModel.changeDraft($0) },
             onResetDraft: { viewModel.resetDraft() },
             onDismissInstanceSheet: { viewModel.dismissInstanceSheet() },
-            onSaveInstance: { viewModel.saveInstance() }
+            onSaveInstance: { Task { await viewModel.saveInstance() } }
         )
+        .onAppear { viewModel.appeared() }
+        .task(id: pageToOpen) {
+            if let pageToOpen {
+                await open(pageToOpen)
+            }
+        }
+    }
+
+    private var pageToOpen: URL? {
+        if case let .browsing(url) = viewModel.state.signIn {
+            url
+        } else {
+            nil
+        }
+    }
+
+    /// Shares Safari's cookies, so a person already signed in on the web only confirms.
+    private func open(_ page: URL) async {
+        do {
+            let callback = if let browser {
+                try await browser(page)
+            } else {
+                try await webAuthenticationSession.authenticate(
+                    using: page,
+                    callback: .customScheme("com.monicahq.ios"),
+                    preferredBrowserSession: .shared,
+                    additionalHeaderFields: [:]
+                )
+            }
+            // Not in this task: it ends as soon as the state leaves `browsing`, which would cancel
+            // the sign-in requests.
+            Task { await viewModel.callbackReceived(callback) }
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            viewModel.browserCancelled()
+        } catch is CancellationError {
+            // The screen went away; nothing to report.
+        } catch {
+            viewModel.browserFailed()
+        }
     }
 }
 
@@ -61,6 +106,7 @@ struct WelcomeScreen: View {
                 VStack(spacing: 0) {
                     VStack(spacing: 0) {
                         TopBar(onInstanceSettings: onOpenInstanceSheet)
+                            .disabled(state.signIn.isBusy)
                         Brand()
                         Illustration()
                             .padding(.top, 16)
@@ -70,9 +116,14 @@ struct WelcomeScreen: View {
                     }
                     Spacer(minLength: 24)
                     VStack(spacing: 0) {
+                        SignInStatus(progress: state.signIn, host: instanceHost(state.instanceURL))
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
                         Actions(onSignUp: onSignUp, onLogIn: onLogIn)
+                            .disabled(state.signIn.isBusy)
                             .padding(.horizontal, 24)
                         InstanceLine(host: instanceHost(state.instanceURL), onTap: onOpenInstanceSheet)
+                            .disabled(state.signIn.isBusy)
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             .padding(.bottom, 16)
@@ -83,6 +134,9 @@ struct WelcomeScreen: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .background(Color.page)
+        // Shown in place of the home (after logging out, or a session that ended): VoiceOver
+        // starts reading the new screen rather than staying where the old one was.
+        .onAppear { AccessibilityNotification.ScreenChanged().post() }
     }
 }
 
@@ -179,6 +233,60 @@ private struct Actions: View {
     }
 }
 
+/// Where logging in stands: a progress line while the app works, announced to VoiceOver, or what
+/// went wrong, which takes the VoiceOver focus so it is read right away.
+private struct SignInStatus: View {
+    let progress: SignInProgress
+    let host: String
+
+    @AccessibilityFocusState private var isErrorFocused: Bool
+
+    var body: some View {
+        Group {
+            switch progress {
+            case .checking, .browsing, .signingIn:
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text(connecting)
+                }
+                .accessibilityElement(children: .combine)
+            case let .failed(error):
+                // An icon and a sentence, not a colour, say what is wrong.
+                Label {
+                    Text(error.message)
+                } icon: {
+                    Image(systemName: "exclamationmark.circle")
+                }
+                .accessibilityFocused($isErrorFocused)
+            case .idle:
+                EmptyView()
+            }
+        }
+        .font(.subheadline)
+        .foregroundStyle(Color.ink)
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .task(id: progress) {
+            switch progress {
+            case .checking, .signingIn:
+                AccessibilityNotification.Announcement(connecting).post()
+            case .failed:
+                // Once the error is laid out and the browser sheet has handed focus back; reset
+                // first, so a second error in a row moves focus again.
+                isErrorFocused = false
+                try? await Task.sleep(for: .milliseconds(300))
+                isErrorFocused = true
+            case .idle, .browsing:
+                break
+            }
+        }
+    }
+
+    private var connecting: String {
+        String(format: String(localized: "welcome_connecting"), host)
+    }
+}
+
 private struct InstanceLine: View {
     let host: String
     let onTap: () -> Void
@@ -238,6 +346,14 @@ private func welcomePreview(_ state: WelcomeUiState) -> some View {
 #Preview("French") {
     welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL))
         .environment(\.locale, Locale(identifier: "fr"))
+}
+
+#Preview("Signing in") {
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL, signIn: .signingIn))
+}
+
+#Preview("Error") {
+    welcomePreview(WelcomeUiState(instanceURL: defaultInstanceURL, signIn: .failed(.signUpUnfinished)))
 }
 
 #Preview("Instance sheet") {

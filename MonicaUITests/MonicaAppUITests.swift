@@ -15,16 +15,6 @@ final class MonicaAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testTappingLogInDoesNothingYet() {
-        let app = launchApp()
-        XCTAssertTrue(app.staticTexts["Welcome to Monica"].waitForExistence(timeout: 10))
-
-        app.buttons["Log in"].scrolledTo(in: app).tap()
-
-        XCTAssertTrue(app.staticTexts["Welcome to Monica"].exists)
-    }
-
-    @MainActor
     func testTheChosenInstanceIsKeptAfterRelaunching() {
         let preferences = UUID().uuidString
         let app = launchApp(preferences: preferences)

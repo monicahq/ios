@@ -6,6 +6,8 @@ import SwiftUI
 
 /// Filled button: the main action of a screen.
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
@@ -15,13 +17,16 @@ struct PrimaryButtonStyle: ButtonStyle {
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 56)
             .background(Color.primaryFill, in: Capsule())
-            .opacity(configuration.isPressed ? 0.8 : 1)
+            // Dimmed while it cannot be used, so it does not look tappable.
+            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.5)
             .contentShape(Capsule())
     }
 }
 
 /// Outlined button: a secondary action next to a primary one.
 struct OutlinedButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
@@ -34,12 +39,15 @@ struct OutlinedButtonStyle: ButtonStyle {
             // Muted rather than the design's hairline-strong: the outline is what makes the button
             // look tappable, so it needs 3:1 against the page (hairline-strong is 1.5:1).
             .overlay(Capsule().strokeBorder(Color.muted, lineWidth: 1))
+            .opacity(isEnabled ? 1 : 0.5)
             .contentShape(Capsule())
     }
 }
 
 /// Text button: a secondary action without a frame, such as Cancel next to Save.
 struct TextButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
@@ -49,6 +57,7 @@ struct TextButtonStyle: ButtonStyle {
             .padding(.vertical, 8)
             .frame(minWidth: 44, minHeight: 44)
             .background(configuration.isPressed ? Color.hairline : Color.clear, in: Capsule())
+            .opacity(isEnabled ? 1 : 0.5)
             .contentShape(Capsule())
     }
 }

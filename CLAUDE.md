@@ -6,8 +6,8 @@ usually checked out next to this repo in `../monica`). Swift, SwiftUI. The Andro
 with the same goals.
 
 - Goal: every feature of the web app over time, plus mobile-specific ones.
-- The server is the source of truth. The app uses only its JSON API (`/api/v1`, Sanctum tokens,
-  OpenAPI at `/docs/api/v1/openapi`). Missing endpoint? It is added to the Monica API first.
+- The server is the source of truth. The app uses only its JSON API (`/api/v1`, OAuth tokens
+  Monica issues to its mobile apps, OpenAPI at `/docs/api/v1/openapi`). Missing endpoint? It is added to the Monica API first.
 - Same concepts and words as the web app (account, vault, contact, reminder, template...).
 - Before specifying a feature, read how the web app does it: screens, `routes/api.php`,
   `resources/docs/api` and wording in the Monica repo. When the Android app already has it, read
