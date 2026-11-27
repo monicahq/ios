@@ -1,13 +1,16 @@
-name: Boot the simulator
-description: Boot the iPhone 17 simulator of the newest iOS runtime and export its id as SIMULATOR_ID
+name: Start the simulator
+description: >
+  Start booting the iPhone 17 simulator of the newest iOS runtime in the background and export
+  its id as SIMULATOR_ID. Wait for it with wait-for-simulator before the tests.
 
 runs:
   using: composite
   steps:
     # CoreSimulator sometimes starts after the job, and xcodebuild then sees no simulator at all.
-    # Booting it before the tests avoids "Failed to launch" on a cold simulator, and the id makes
-    # xcodebuild test on that very simulator (the newest iOS runtime).
-    - name: Boot the simulator
+    # The first boot of a new simulator runs iOS data migration for 1 to 2 minutes, and much
+    # longer right after a build. Booting in the background from the start of the job overlaps it
+    # with the build instead. The id makes xcodebuild test on that very simulator.
+    - name: Start the simulator
       shell: bash
       run: |
         find_simulator() {
@@ -23,6 +26,6 @@ runs:
           echo "Simulators not ready yet (attempt $attempt)"; sleep 5
         done
         if [ -z "$id" ]; then xcrun simctl list devices available; exit 1; fi
-        xcrun simctl boot "$id" || true
-        xcrun simctl bootstatus "$id" -b
+        nohup xcrun simctl boot "$id" > "$RUNNER_TEMP/simulator-boot.log" 2>&1 < /dev/null &
+        echo $! > "$RUNNER_TEMP/simulator-boot.pid"
         echo "SIMULATOR_ID=$id" >> "$GITHUB_ENV"
