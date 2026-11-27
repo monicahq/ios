@@ -133,7 +133,7 @@ app: the instance line shows the new address.
 - Device is offline: the screen shows exactly the same, since it needs no network.
 - Instance address with a port or a path (`http://192.168.1.10:8080/monica`): accepted as is, and
   the instance line shows `192.168.1.10:8080/monica`.
-- Plain `http://` addresses are accepted: self-hosted instances on a home network often have no
+- *Superseded by `specs/002-login-registration` (FR-019): Release builds refuse `http://`.* Plain `http://` addresses are accepted: self-hosted instances on a home network often have no
   certificate.
 - A long address with a large text size wraps in the field instead of scrolling sideways.
 - Tall screens: the buttons and the instance line sit at the bottom of the screen and the space
@@ -208,7 +208,7 @@ app: the instance line shows the new address.
 - "Nothing works for now" means "Sign up" and "Log in" are shown but do nothing; they are their
   own features. The instance sheet was added to this feature afterwards (User Story 4), as the
   Android app did.
-- The app does not contact the instance when saving it: checking that a Monica server answers
+- *Superseded by `specs/002-login-registration` (FR-011): saving now checks the instance first.* The app does not contact the instance when saving it: checking that a Monica server answers
   there belongs to logging in, the first feature that calls the API.
 - Sheet texts, shared with the Android app: "Instance URL" / "URL de l'instance", the explanation
   of the design, "Address" / "Adresse", placeholder `https://monica.example.com` /
