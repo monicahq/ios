@@ -163,7 +163,9 @@ final class InstanceSheetUITests: XCTestCase {
 
     @MainActor
     private func showError(_ app: XCUIApplication) {
-        app.textFields["Address"].replaceText(with: "not an address")
+        // An address-like refusal: with plain words such as "not an address" in the field, the
+        // audit's text detection sometimes failed to match the drawn text to the field.
+        app.textFields["Address"].replaceText(with: "ftp://monica.example.com")
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts[invalidMessage].waitForExistence(timeout: 5))
     }
