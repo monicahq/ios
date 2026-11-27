@@ -21,3 +21,4 @@ __pycache__/
 .specify/extensions/.cache/
 .specify/extensions/*/.specify-dev/
 specs/**/.spec-context.json
+specs/.trace.jsonl
