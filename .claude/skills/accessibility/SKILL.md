@@ -1,6 +1,6 @@
 ---
 name: accessibility
-description: Accessibility rules for every screen of this iOS app (VoiceOver, touch targets, contrast, Dynamic Type, Reduce Motion, automated audit). Use whenever creating or changing a SwiftUI view, a screen, an icon, an image or a colour, and before a pull request that touches the UI. Trigger whenever accessibility, a11y, VoiceOver, accessibilityLabel, traits, Dynamic Type or screen reader is mentioned.
+description: Accessibility rules for every screen of this iOS app (VoiceOver, touch targets, contrast, Dynamic Type, Reduce Motion, Accessibility Inspector audit). Use whenever creating or changing a SwiftUI view, a screen, an icon, an image or a colour, and before a pull request that touches the UI. Trigger whenever accessibility, a11y, VoiceOver, accessibilityLabel, traits, Dynamic Type or screen reader is mentioned.
 ---
 
 # Accessibility
@@ -10,8 +10,8 @@ delivery condition, not a final pass.
 
 1. Read `docs/accessibility.md` before writing or changing a view. Apply every rule of its table to
    what you write.
-2. Every screen's UI tests include a test that calls `performAccessibilityAudit()`, in light and
-   dark appearance.
+2. Run the Accessibility Inspector's audit on every screen the change touches, in light and dark
+   appearance (there are no UI tests to run it automatically, see `docs/accessibility.md`).
 3. Every accessibility label, hint and value is a String Catalog entry, translated in every
    supported language like any other text.
 4. Before a pull request that changes the UI, launch the `accessibility-reviewer` agent on the

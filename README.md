@@ -26,8 +26,6 @@ DEST='platform=iOS Simulator,name=iPhone 17'
 xcodebuild build -project Monica.xcodeproj -scheme Monica -destination "$DEST"   # build
 xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" \
   -only-testing:MonicaTests                                                       # unit tests
-xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" \
-  -only-testing:MonicaUITests                                                     # UI tests
 swiftlint --strict                                                                # lint
 swiftformat .                                                                     # format
 ```
@@ -42,7 +40,7 @@ needs a Monica that knows the iOS app (`minimum_ios_version` in its `/api/v1/sta
 ## Principles
 
 The project rules are in the [constitution](.specify/memory/constitution.md). In short: simple code,
-official Apple best practices, everything unit tested, every screen UI tested, native iOS only.
+official Apple best practices, everything unit tested (no slow UI tests: screens stay thin), native iOS only.
 
 - [Architecture](docs/architecture.md): how screens, view models and repositories fit together
 - [Testing](docs/testing.md): what to test and how

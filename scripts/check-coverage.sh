@@ -2,7 +2,7 @@
 # Fail when the unit tests cover less than 80% of the lines of non-UI code.
 # Usage: scripts/check-coverage.sh <unit-tests.xcresult> [minimum-percent]
 #
-# Views are covered by the UI tests, so they are left out of the measure: the app entry point
+# Views hold no logic (there are no UI tests), so they are left out of the measure: the app entry point
 # (MonicaApp.swift), screens (*Screen.swift), shared views (*View.swift) and the theme (Theme/).
 # Keep logic out of those files: a pure function a screen needs goes in its own file, with its
 # own unit test.

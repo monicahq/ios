@@ -53,6 +53,39 @@ struct MonicaClientTests {
         #expect(monica.requests.last?.headers["Authorization"] == nil)
     }
 
+    @Test func `posts JSON with its headers and the token to its own instance`() async throws {
+        let client = client()
+        let body = Data(#"{"name":"Family"}"#.utf8)
+
+        _ = try await client.postJSON(url("\(monica.base)/api/v1/vaults"), body: body, token: "secret")
+
+        let request = try #require(monica.requests.last)
+        #expect(request.method == "POST")
+        #expect(request.body == body)
+        #expect(request.headers["Content-Type"] == "application/json")
+        #expect(request.headers["Accept"] == "application/json")
+        #expect(request.headers["Authorization"] == "Bearer secret")
+    }
+
+    @Test func `never posts the token to another origin`() async throws {
+        let other = FakeMonica()
+        let client = client()
+
+        _ = try await client.postJSON(url("\(other.base)/api/v1/vaults"), body: Data("{}".utf8), token: "secret")
+
+        #expect(other.requests.last?.headers["Authorization"] == nil)
+    }
+
+    @Test func `a get sends no body`() async throws {
+        let client = client()
+
+        _ = try await client.get(url("\(monica.base)/api/v1/status"))
+
+        #expect(monica.requests.last?.method == "GET")
+        #expect(monica.requests.last?.body.isEmpty == true)
+        #expect(monica.requests.last?.headers["Content-Type"] == nil)
+    }
+
     @Test func `a network failure keeps its kind`() async throws {
         monica.settings.unreachable = true
         let client = client()

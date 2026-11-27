@@ -1,11 +1,16 @@
 # Testing
 
-Every change ships with tests. Two kinds are mandatory (see the constitution, principles III and IV).
+Every change ships with unit tests (see the constitution, principles III and IV). There is **no UI
+test target**: XCUITest suites were too slow for what they caught. The app is tested where its logic
+lives instead, and the logic MUST live where it can be tested:
 
-| Kind | Target | Runs on | Covers | Command |
-|------|--------|---------|--------|---------|
-| Unit | `MonicaTests` | Simulator (hosted in the app) | View models, repositories, mappers, any non-UI logic | `xcodebuild test ... -only-testing:MonicaTests` |
-| UI | `MonicaUITests` | Simulator | Every screen's states and interactions, user journeys | `xcodebuild test ... -only-testing:MonicaUITests` |
+| What | Tested by |
+|------|-----------|
+| View models: every `UiState`, every event | Unit tests in `MonicaTests` |
+| Repositories, mappers, API errors, session | Unit tests against `FakeMonica` |
+| User journeys (sign in, list vaults, create one, log out...) | Unit tests chaining the view models and repositories of each step |
+| How a screen draws a state | SwiftUI previews (light and dark) and a check by hand on a simulator |
+| Accessibility | `accessibility-reviewer` agent, Accessibility Inspector audit, VoiceOver by hand ([accessibility.md](accessibility.md)) |
 
 ## Unit tests
 
@@ -29,44 +34,27 @@ struct ContactsViewModelTests {
 }
 ```
 
-## UI tests
+## Screens
 
-- Written with **XCTest UI testing** (`XCUIApplication`), one `XCTestCase` per screen.
-- Launch the app on the screen and in the state to test, assert what is shown, perform the
-  interactions, check the result.
-- Find elements by what people see or hear: `app.buttons["Log in"]`, `app.staticTexts[...]`.
-  Use `accessibilityIdentifier` only as a last resort.
-- Each user journey from a spec gets at least one end-to-end test.
-- Each screen has a test running the automated accessibility audit
-  (`performAccessibilityAudit()`), see [accessibility.md](accessibility.md).
-
-```swift
-final class ContactsScreenUITests: XCTestCase {
-    @MainActor
-    func testShowsContactNames() {
-        let app = XCUIApplication()
-        app.launch()
-
-        XCTAssertTrue(app.staticTexts["Ada"].waitForExistence(timeout: 5))
-    }
-}
-```
+A screen is a stateless function of its `UiState` (see [architecture.md](architecture.md)). It holds
+no decision: what to show, which message, what a tap does all come from the view model, which is
+unit tested. A pure function a screen needs (like `Welcome/Highlight.swift`) goes in its own file,
+with its own unit test. Each screen has `#Preview`s of its states, in light and dark appearance, to
+see them without running the app.
 
 ## Coverage
 
 `scripts/check-coverage.sh` reads the unit tests' result bundle and fails when the line coverage of
 non-UI code is under 80%. `MonicaApp.swift`, `*Screen.swift` and `*View.swift` files and `Theme/`
-are excluded: they are covered by the UI tests. So keep logic out of screen files: a pure function
+are excluded: they hold no logic and are checked through previews and by hand. So keep logic out
+of screen files: a pure function
 a screen needs (like `Welcome/Highlight.swift`) goes in its own file, with its own unit test.
 
 ## Preferences
 
 `InstanceRepository` and the view models using it are tested with a real `UserDefaults` in a
 store of its own (`temporaryDefaults()` in `MonicaTests/Instance/InstanceRepositoryTests.swift`),
-rather than a fake behind a protocol that would exist only for the tests. UI tests do the same:
-`launchApp` gives each launch a fresh store through the `MONICA_DEFAULTS_SUITE` environment
-variable (read in Debug builds only), and a test passes the same `preferences` to a second launch
-to check what the app kept.
+rather than a fake behind a protocol that would exist only for the tests.
 
 ## A fake Monica
 
@@ -79,20 +67,19 @@ revocation and `/api/v1/me`.
   answer a request themselves with `settings.override`, and read the `requests` it received.
   `MonicaTests/Support/Fakes.swift` wires it to the app's types with an in-memory Keychain
   (`FakeSecretStore`) and a clock moved by hand (`FakeClock`), in `Harness`.
-- UI tests pick a scenario with `launchApp(server:browser:)`: the app then answers every host with
-  that fake (compatible, unreachable, notMonica, monicaTooOld, appTooOld, registrationClosed,
-  renewalRefused, shortLived, notAllowed, offlineAfterSignIn) and replaces iOS's authentication
-  sheet, which UI tests cannot drive, with an answer (allow, deny, cancel, or slow). Each launch
-  also gets a Keychain service of its own, from `MONICA_DEFAULTS_SUITE`.
-- The real sheet and the real instance are checked by hand before a pull request (see the
-  feature's `quickstart.md`).
+- The fake also holds the account's vaults (`settings.vaults`, empty like a new account) and
+  answers the vault endpoints: the list (paged), one vault, and creating one, with a plan ceiling
+  (`vaultLimit`), vaults deleted meanwhile (`goneVaultIDs`), a list that goes offline after a number
+  of answers (`vaultListFailsAfter`) or answers late (`vaultListDelay`).
+- The app itself never uses the fake. Screens are checked by hand against a real instance, for
+  example a Monica running on your machine (see the README), before a pull request (see the
+  feature's `quickstart.md`), and in their `#Preview`s for every state.
 
 ## Languages
 
 `LocalizationParityTests` fails when a string of the catalog is missing, or loses a placeholder, in
-one of the supported languages. UI tests show a screen in another language without changing the
-simulator's by launching the app with `-AppleLanguages (fr) -AppleLocale fr` (see `launchApp` in
-`MonicaUITests/Launch.swift`).
+one of the supported languages. To see a screen in another language, launch the app with
+`-AppleLanguages '(fr)' -AppleLocale fr_FR`.
 
 ## Running locally
 
@@ -102,8 +89,7 @@ rm -rf build/unit-tests.xcresult   # xcodebuild refuses to overwrite a result bu
 xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaTests \
   -resultBundlePath build/unit-tests.xcresult
 scripts/check-coverage.sh build/unit-tests.xcresult   # coverage gate
-xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaUITests
 ```
 
 Pass `-resultBundlePath build/tests.xcresult` and open the bundle in Xcode for the full report.
-CI runs both suites on every pull request.
+CI runs them, with the coverage gate, on every pull request.

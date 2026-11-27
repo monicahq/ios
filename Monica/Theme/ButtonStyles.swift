@@ -12,13 +12,14 @@ struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.body.weight(.medium))
             .multilineTextAlignment(.center)
-            .foregroundStyle(Color.onPrimaryFill)
+            .foregroundStyle(isEnabled ? Color.onPrimaryFill : Color.ink)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Color.primaryFill, in: Capsule())
-            // Dimmed while it cannot be used, so it does not look tappable.
-            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.5)
+            // Grey while it cannot be used, so it does not look tappable, with its label still
+            // readable (a dimmed button fails the contrast audit).
+            .background(isEnabled ? Color.primaryFill : Color.hairline, in: Capsule())
+            .opacity(configuration.isPressed ? 0.8 : 1)
             .contentShape(Capsule())
     }
 }

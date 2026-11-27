@@ -110,6 +110,28 @@ struct SessionManagerRenewalTests {
         #expect(harness.store.contains(.session))
     }
 
+    @Test func `twenty requests waiting on a renewal that cannot reach the instance all fail and keep the session`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.monica.settings.unreachable = true
+        harness.clock.advance(by: 3600)
+        let sessionManager = harness.sessionManager
+
+        let requests = (0 ..< 20).map { _ in
+            Task { try await sessionManager.authorizedGet("/api/v1/me") }
+        }
+        var errors: [AuthError?] = []
+        for request in requests {
+            if case let .failure(error) = await request.result {
+                errors.append(error as? AuthError)
+            }
+        }
+
+        #expect(errors == Array(repeating: .unreachable, count: 20))
+        #expect(harness.sessionManager.session != nil)
+        #expect(harness.store.contains(.session))
+    }
+
     @Test func `a server error during renewal keeps the session`() async throws {
         let harness = Harness()
         try await harness.signIn()
@@ -166,6 +188,83 @@ struct SessionManagerRenewalTests {
 
         #expect(harness.sessionManager.session?.name == "Pam Beesly")
         #expect(harness.store.read(.session, as: Session.self)?.email == "pam@example.com")
+    }
+
+    @Test func `a profile that cannot be read keeps the session as it was`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        let before = harness.sessionManager.session
+        harness.monica.settings.meAfterSignIn = .json(200, #"{"data":{}}"#)
+
+        await #expect(throws: AuthError.unexpectedAnswer) { try await harness.sessionManager.refreshPerson() }
+
+        #expect(harness.sessionManager.session == before)
+        #expect(harness.store.read(.session, as: Session.self) == before)
+    }
+
+    // MARK: Any request
+
+    @Test(arguments: [201, 404, 422])
+    func `an authorized request returns the answer whatever its status`(status: Int) async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.monica.settings.override = { request in
+            request.url.path().hasSuffix("/api/v1/things") ? .json(status, #"{"message":"m"}"#) : nil
+        }
+
+        let response = try await harness.sessionManager.authorized("POST", "/api/v1/things", json: Data("{}".utf8))
+
+        #expect(response.status == status)
+        #expect(harness.monica.requests.last?.method == "POST")
+        #expect(harness.monica.requests.last?.body == Data("{}".utf8))
+    }
+
+    @Test func `an authorized request renews expired access first`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.clock.advance(by: 3600)
+
+        _ = try await harness.sessionManager.authorized("GET", "/api/v1/vaults")
+
+        #expect(harness.monica.tokenRequestCount == 2)
+    }
+
+    @Test func `an authorized request renews and retries once after an unauthenticated answer`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        let original = try #require(harness.sessionManager.session?.accessToken)
+        harness.monica.settings.override = { request in
+            request.headers["Authorization"] == "Bearer \(original)" ? .json(401, #"{"message":"Unauthenticated."}"#) : nil
+        }
+
+        let response = try await harness.sessionManager.authorized("POST", "/api/v1/vaults", json: Data(#"{"name":"A"}"#.utf8))
+
+        #expect(response.status == 201)
+        #expect(harness.monica.requests.filter { $0.method == "POST" && $0.url.path().hasSuffix("/vaults") }.count == 2)
+    }
+
+    @Test func `an authorized request still unauthenticated ends the session`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.monica.settings.override = { request in
+            request.url.path().hasSuffix("/api/v1/vaults") ? .json(401, #"{"message":"Unauthenticated."}"#) : nil
+        }
+
+        await #expect(throws: AuthError.sessionEnded) { _ = try await harness.sessionManager.authorized("GET", "/api/v1/vaults") }
+        #expect(harness.sessionManager.state == .signedOut(.ended))
+    }
+
+    @Test func `an answer arriving after a logout is thrown away`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.monica.settings.vaultListDelay = 0.5
+        let sessionManager = harness.sessionManager
+
+        let request = Task { try await sessionManager.authorized("GET", "/api/v1/vaults") }
+        try await Task.sleep(for: .milliseconds(100))
+        await sessionManager.logOut()
+
+        await #expect(throws: AuthError.cancelled) { _ = try await request.value }
     }
 
     @Test func `nothing is asked when signed out`() async {

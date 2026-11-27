@@ -13,8 +13,8 @@ WCAG 2.2 AA a delivery condition for every screen a change touches: read princip
 Unless you are told otherwise, it is the branch against `main` plus the working tree:
 
 ```bash
-git diff main...HEAD -- Monica MonicaUITests
-git diff HEAD -- Monica MonicaUITests
+git diff main...HEAD -- Monica
+git diff HEAD -- Monica
 git status --porcelain --untracked-files=all
 ```
 
@@ -47,7 +47,8 @@ Check each rule of `docs/accessibility.md` against the code:
   `.accessibilityAction` alternative.
 - **Strings.** Every accessibility text is a String Catalog entry present in every supported
   language.
-- **Tests.** The screen's UI tests call `performAccessibilityAudit()`, in light and dark appearance.
+- **Previews.** The screen has `#Preview`s of its states in light and dark appearance, so its
+  contrast and layout can be checked without the app (there are no UI tests).
 
 ## How to report
 

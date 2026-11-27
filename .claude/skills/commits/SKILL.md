@@ -39,6 +39,7 @@ description: Conventions for commit messages, pull request titles and descriptio
 | `app` | Application shell: `MonicaApp`, navigation, app-wide setup |
 | `auth` | Connecting to a Monica instance, tokens, sign in and sign out |
 | `contacts` | Contact list, contact details, contact editing |
+| `vaults` | Vault list, vault screens, creating and changing vaults |
 | `ui` | Theme, colours, fonts, icons, shared views and button styles |
 | `i18n` | String Catalog, translations, locales, formats |
 | `data` | Repositories, network, local storage shared by several features |

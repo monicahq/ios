@@ -54,18 +54,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.monicahq.ios.tests
         GENERATE_INFOPLIST_FILE: "YES"
-  MonicaUITests:
-    type: bundle.ui-testing
-    platform: iOS
-    sources:
-      - MonicaUITests
-    dependencies:
-      - target: Monica
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.monicahq.ios.uitests
-        GENERATE_INFOPLIST_FILE: "YES"
-        TEST_TARGET_NAME: Monica
 schemes:
   Monica:
     build:
@@ -80,6 +68,5 @@ schemes:
         - Monica
       targets:
         - MonicaTests
-        - MonicaUITests
     archive:
       config: Release

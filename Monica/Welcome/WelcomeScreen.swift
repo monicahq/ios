@@ -5,8 +5,6 @@ import SwiftUI
 /// iOS's authentication sheet when the view model asks for it.
 struct WelcomeRoute: View {
     @State var viewModel: WelcomeViewModel
-    /// Replaces the authentication sheet in UI tests; nil in the app.
-    let browser: Browser?
 
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
@@ -40,16 +38,12 @@ struct WelcomeRoute: View {
     /// Shares Safari's cookies, so a person already signed in on the web only confirms.
     private func open(_ page: URL) async {
         do {
-            let callback = if let browser {
-                try await browser(page)
-            } else {
-                try await webAuthenticationSession.authenticate(
-                    using: page,
-                    callback: .customScheme("com.monicahq.ios"),
-                    preferredBrowserSession: .shared,
-                    additionalHeaderFields: [:]
-                )
-            }
+            let callback = try await webAuthenticationSession.authenticate(
+                using: page,
+                callback: .customScheme("com.monicahq.ios"),
+                preferredBrowserSession: .shared,
+                additionalHeaderFields: [:]
+            )
             // Not in this task: it ends as soon as the state leaves `browsing`, which would cancel
             // the sign-in requests.
             Task { await viewModel.callbackReceived(callback) }

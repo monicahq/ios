@@ -1,7 +1,6 @@
 included:
   - Monica
   - MonicaTests
-  - MonicaUITests
 opt_in_rules:
   - force_unwrapping
   - implicitly_unwrapped_optional
