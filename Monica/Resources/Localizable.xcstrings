@@ -1,13 +1,284 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "welcome" : {
+    "app_name" : {
+      "comment" : "The product name: the same in every language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monica"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monica"
+          }
+        }
+      }
+    },
+    "instance_sheet_address" : {
+      "comment" : "Label of the instance address field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresse"
+          }
+        }
+      }
+    },
+    "instance_sheet_cancel" : {
+      "comment" : "Closes the instance sheet without saving.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        }
+      }
+    },
+    "instance_sheet_description" : {
+      "comment" : "Explanation under the address field of the instance sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The address of the Monica server the app connects to. Keep the default to use the hosted service, or enter the address of your own instance."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'adresse du serveur Monica auquel l'app se connecte. Laissez la valeur par défaut pour utiliser le service hébergé, ou saisissez celle de votre propre instance."
+          }
+        }
+      }
+    },
+    "instance_sheet_invalid" : {
+      "comment" : "Shown and read aloud when the typed instance address cannot be used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter an address like https://monica.example.com"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez une adresse comme https://monica.exemple.fr"
+          }
+        }
+      }
+    },
+    "instance_sheet_placeholder" : {
+      "comment" : "Example address shown in the empty instance field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://monica.example.com"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "https://monica.exemple.fr"
+          }
+        }
+      }
+    },
+    "instance_sheet_reset" : {
+      "comment" : "Button that puts the hosted service's address back in the field, without saving.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to default"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rétablir par défaut"
+          }
+        }
+      }
+    },
+    "instance_sheet_save" : {
+      "comment" : "Saves the instance address. French follows the web app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sauvegarder"
+          }
+        }
+      }
+    },
+    "instance_sheet_title" : {
+      "comment" : "Title of the sheet where the person chooses the Monica server.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance URL"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de l'instance"
+          }
+        }
+      }
+    },
+    "welcome_description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monica helps you remember and organise your relationships and life context."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monica vous aide à vous souvenir et à organiser vos relations et votre contexte de vie."
+          }
+        }
+      }
+    },
+    "welcome_illustration" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A panda sitting in the grass, waving"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un panda assis dans l'herbe qui fait coucou"
+          }
+        }
+      }
+    },
+    "welcome_instance" : {
+      "comment" : "%@ is the address of the Monica instance, e.g. app.monicahq.com",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance : %@"
+          }
+        }
+      }
+    },
+    "welcome_instance_settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instance settings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paramètres de l'instance"
+          }
+        }
+      }
+    },
+    "welcome_log_in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion"
+          }
+        }
+      }
+    },
+    "welcome_sign_up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign up"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inscription"
+          }
+        }
+      }
+    },
+    "welcome_title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Welcome to Monica"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bienvenue dans Monica"
           }
         }
       }

@@ -66,6 +66,8 @@ description: Conventions for commit messages, pull request titles and descriptio
   Short headings (two or three words) may group bullets. One idea per bullet, as few words as
   possible, understandable by a non-technical reader. Do not restate the title or list what the
   diff already shows.
+- A change visible on screen says, in a bullet, which accessibility checks were done (VoiceOver,
+  largest text size, dark mode), following `docs/accessibility.md`.
 - A change visible on screen carries a screenshot from a simulator, attached with
   `gh pr create --attach '/tmp/name.png#alt text'`. Screenshots are never committed.
 

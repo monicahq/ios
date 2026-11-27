@@ -1,0 +1,3 @@
+disabled_rules:
+  # Test names are sentences written as raw identifiers (`shows the contacts`), see docs/testing.md.
+  - identifier_name

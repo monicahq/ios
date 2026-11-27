@@ -37,6 +37,8 @@ struct ContactsViewModelTests {
 - Find elements by what people see or hear: `app.buttons["Log in"]`, `app.staticTexts[...]`.
   Use `accessibilityIdentifier` only as a last resort.
 - Each user journey from a spec gets at least one end-to-end test.
+- Each screen has a test running the automated accessibility audit
+  (`performAccessibilityAudit()`), see [accessibility.md](accessibility.md).
 
 ```swift
 final class ContactsScreenUITests: XCTestCase {
@@ -50,11 +52,37 @@ final class ContactsScreenUITests: XCTestCase {
 }
 ```
 
+## Coverage
+
+`scripts/check-coverage.sh` reads the unit tests' result bundle and fails when the line coverage of
+non-UI code is under 80%. `MonicaApp.swift`, `*Screen.swift` and `*View.swift` files and `Theme/`
+are excluded: they are covered by the UI tests. So keep logic out of screen files: a pure function
+a screen needs (like `Welcome/Highlight.swift`) goes in its own file, with its own unit test.
+
+## Preferences
+
+`InstanceRepository` and the view models using it are tested with a real `UserDefaults` in a
+store of its own (`temporaryDefaults()` in `MonicaTests/Instance/InstanceRepositoryTests.swift`),
+rather than a fake behind a protocol that would exist only for the tests. UI tests do the same:
+`launchApp` gives each launch a fresh store through the `MONICA_DEFAULTS_SUITE` environment
+variable (read in Debug builds only), and a test passes the same `preferences` to a second launch
+to check what the app kept.
+
+## Languages
+
+`LocalizationParityTests` fails when a string of the catalog is missing, or loses a placeholder, in
+one of the supported languages. UI tests show a screen in another language without changing the
+simulator's by launching the app with `-AppleLanguages (fr) -AppleLocale fr` (see `launchApp` in
+`MonicaUITests/Launch.swift`).
+
 ## Running locally
 
 ```sh
 DEST='platform=iOS Simulator,name=iPhone 17'
-xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaTests
+rm -rf build/unit-tests.xcresult   # xcodebuild refuses to overwrite a result bundle
+xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaTests \
+  -resultBundlePath build/unit-tests.xcresult
+scripts/check-coverage.sh build/unit-tests.xcresult   # coverage gate
 xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaUITests
 ```
 

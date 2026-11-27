@@ -32,8 +32,14 @@ Every changed view model, repository, mapper or non-UI type has a Swift Testing 
 type with no test fails this step.
 
 ```bash
-xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaTests
+rm -rf build/unit-tests.xcresult
+xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" -only-testing:MonicaTests \
+  -resultBundlePath build/unit-tests.xcresult
+scripts/check-coverage.sh build/unit-tests.xcresult
 ```
+
+`check-coverage.sh` fails when non-UI line coverage drops below 80%. Keep logic out of
+`*Screen.swift` files (they are excluded from the measure) and unit test it.
 
 ## 3. UI tests
 
@@ -82,8 +88,13 @@ again afterwards: the unsigned build leaves products the simulator refuses to lo
 
 ## 7. Strings and accessibility
 
-Every user-visible text is in `Monica/Resources/Localizable.xcstrings`. Every meaningful image or
-icon has an accessibility label, every tappable element a target of at least 44 × 44 pt.
+Every user-visible text is in `Monica/Resources/Localizable.xcstrings` and translated in every
+supported language (constitution, principle VI).
+
+Accessibility is mandatory (principle VII). Follow the `accessibility` skill: the screen's UI tests
+run the accessibility audit, the `accessibility-reviewer` agent has reviewed the change and its
+confirmed findings are fixed, and the manual checks of `docs/accessibility.md` are done or
+explicitly reported as not done.
 
 ## 8. Documentation
 

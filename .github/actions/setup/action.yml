@@ -1,6 +1,11 @@
 name: Set up build environment
 description: Install the tools pinned in mise.toml and generate the Xcode project
 
+inputs:
+  boot-simulator:
+    description: Boot the iPhone 17 simulator and export its id as SIMULATOR_ID, for the test jobs
+    default: "false"
+
 runs:
   using: composite
   steps:
@@ -9,3 +14,27 @@ runs:
     - name: Generate the Xcode project
       shell: bash
       run: xcodegen generate
+
+    # CoreSimulator sometimes starts after the job, and xcodebuild then sees no simulator at all.
+    # Booting it before the tests avoids "Failed to launch" on a cold simulator, and the id makes
+    # xcodebuild test on that very simulator (the newest iOS runtime).
+    - name: Boot the simulator
+      if: inputs.boot-simulator == 'true'
+      shell: bash
+      run: |
+        find_simulator() {
+          xcrun simctl list devices available -j | jq -r '
+            [.devices | to_entries[] | select(.key | test("SimRuntime\\.iOS-"))
+              | (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)) as $v
+              | .value[] | select(.name == "iPhone 17") | {v: $v, udid}]
+            | sort_by(.v) | last | .udid // empty'
+        }
+        for attempt in $(seq 1 24); do
+          id=$(find_simulator)
+          if [ -n "$id" ]; then break; fi
+          echo "Simulators not ready yet (attempt $attempt)"; sleep 5
+        done
+        if [ -z "$id" ]; then xcrun simctl list devices available; exit 1; fi
+        xcrun simctl boot "$id" || true
+        xcrun simctl bootstatus "$id" -b
+        echo "SIMULATOR_ID=$id" >> "$GITHUB_ENV"
