@@ -14,16 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  format:
-    name: Format
-    runs-on: macos-26
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: jdx/mise-action@v5
-      - name: Check formatting (SwiftFormat)
-        run: swiftformat --lint .
-
+  # SwiftFormat and SwiftLint share one job: each takes seconds, and every job holds one of the
+  # few macOS runners the account may use at once.
   lint:
     name: Lint
     runs-on: macos-26
@@ -31,7 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
+      - name: Check formatting (SwiftFormat)
+        run: swiftformat --lint .
       - name: SwiftLint
+        if: success() || failure()
         run: swiftlint --strict --reporter github-actions-logging
 
   unit-tests:
@@ -47,6 +42,7 @@ jobs:
         run: >
           xcodebuild test -project Monica.xcodeproj -scheme Monica
           -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -only-testing:MonicaTests
+          COMPILER_INDEX_STORE_ENABLE=NO
           -resultBundlePath build/unit-tests.xcresult
       - name: Coverage gate
         run: scripts/check-coverage.sh build/unit-tests.xcresult
@@ -65,19 +61,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
-      - name: Build debug for the simulator
-        run: >
-          xcodebuild build -project Monica.xcodeproj -scheme Monica -configuration Debug
-          -destination 'generic/platform=iOS Simulator' -derivedDataPath build/DerivedData
+      # The test jobs already build the Debug app for the simulator.
       - name: Build release for devices (unsigned)
         run: >
           xcodebuild build -project Monica.xcodeproj -scheme Monica -configuration Release
-          -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO
-      - name: Upload debug app
-        uses: actions/upload-artifact@v7
-        with:
-          name: app-debug-simulator
-          path: build/DerivedData/Build/Products/Debug-iphonesimulator/Monica.app
+          -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
+          COMPILER_INDEX_STORE_ENABLE=NO
 
   ui-tests:
     name: UI tests
@@ -95,6 +84,7 @@ jobs:
         run: >
           xcodebuild test -project Monica.xcodeproj -scheme Monica
           -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -only-testing:MonicaUITests
+          -enableCodeCoverage NO COMPILER_INDEX_STORE_ENABLE=NO
           -test-timeouts-enabled YES
           -default-test-execution-time-allowance 180
           -maximum-test-execution-time-allowance 300

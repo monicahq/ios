@@ -47,7 +47,7 @@ scripts/check-coverage.sh build/unit-tests.xcresult   # non-UI line coverage of 
 xcodebuild test -project Monica.xcodeproj -scheme Monica \
   -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:MonicaUITests   # when UI changed
 ```
-CI (`.github/workflows/ci.yml`) runs all of these plus debug and release builds.
+CI (`.github/workflows/ci.yml`) runs all of these plus a release build.
 
 ## Commits
 NEVER commit or push to `main`: always a dated branch and a pull request (enforced by a GitHub
