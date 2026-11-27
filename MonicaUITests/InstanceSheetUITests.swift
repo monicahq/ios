@@ -22,8 +22,7 @@ final class InstanceSheetUITests: XCTestCase {
 
     @MainActor
     private func waitForSheetToClose(_ app: XCUIApplication) {
-        let closed = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.staticTexts[sheetTitle])
-        wait(for: [closed], timeout: 5)
+        XCTAssertTrue(app.staticTexts[sheetTitle].waitForNonExistence(timeout: 5))
     }
 
     @MainActor
