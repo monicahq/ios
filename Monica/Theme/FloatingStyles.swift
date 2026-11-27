@@ -6,16 +6,6 @@ import SwiftUI
 // - earlier versions: the standard material, or a solid fill for the dark button;
 // - Reduce Transparency on: solid, whatever the version, so nothing behind can blur the text.
 
-/// UI tests ask for solid controls with `MONICA_UI_TEST_REDUCE_TRANSPARENCY` (Debug builds only),
-/// since a test cannot change the simulator's setting.
-private let reduceTransparencyForUITests: Bool = {
-    #if DEBUG
-        ProcessInfo.processInfo.environment["MONICA_UI_TEST_REDUCE_TRANSPARENCY"] == "1"
-    #else
-        false
-    #endif
-}()
-
 extension View {
     /// The round account button's background.
     func floatingCircle() -> some View {
@@ -32,7 +22,7 @@ private struct FloatingCircle: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        if reduceTransparency || reduceTransparencyForUITests {
+        if reduceTransparency {
             content
                 .background(Color.groupedCard, in: Circle())
                 .overlay(Circle().strokeBorder(Color.hairlineStrong, lineWidth: 1))
@@ -48,7 +38,7 @@ private struct FloatingPrimaryButton: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     func body(content: Content) -> some View {
-        let solid = reduceTransparency || reduceTransparencyForUITests
+        let solid = reduceTransparency
         if !solid, #available(iOS 26.0, *) {
             content.buttonStyle(.glassProminent).tint(Color.primaryFill)
         } else {

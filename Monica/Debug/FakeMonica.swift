@@ -1,12 +1,10 @@
 #if DEBUG
-    import AuthenticationServices
     import Foundation
     import Synchronization
 
-    /// A Monica instance played in memory, for tests only (Debug builds; Release builds do not
-    /// contain it). Unit tests create one per test on a host of their own and change what it
-    /// answers; UI tests pick a scenario through `MONICA_UI_TEST_SERVER`, and the app then
-    /// answers every host with it (`FakeMonica.forUITests()`).
+    /// A Monica instance played in memory, for unit tests only (Debug builds; Release builds do
+    /// not contain it). Tests create one per test on a host of their own and change what it
+    /// answers.
     ///
     /// It answers the way the real instance does (see `specs/002-login-registration/contracts`):
     /// the status, the OAuth metadata, the token, revocation and `/api/v1/me` endpoints.
@@ -78,7 +76,6 @@
         }
 
         private static let registry = Mutex<[String: FakeMonica]>([:])
-        private static let wildcard = "*"
 
         let host: String
         let path: String
@@ -121,7 +118,7 @@
         }
 
         static func fake(for host: String) -> FakeMonica? {
-            registry.withLock { $0[host] ?? $0[wildcard] }
+            registry.withLock { $0[host] }
         }
 
         func answer(_ request: Request) -> Answer {
@@ -141,8 +138,8 @@
             if let answer = vaultsOrUnreachable(request, settings: settings) {
                 return answer
             }
-            // Routed by the end of the path, so the UI tests' fake also plays an instance served
-            // under a path; the instance address is what comes before the route.
+            // Routed by the end of the path, so the fake also plays an instance served under a
+            // path; the instance address is what comes before the route.
             let routes = ["/api/v1/status", "/.well-known/oauth-authorization-server", "/oauth/token", "/oauth/revoke", "/api/v1/me"]
             let fullPath = request.url.path()
             let route = routes.first { fullPath.hasSuffix($0) } ?? fullPath
@@ -217,76 +214,6 @@
             {"token_type":"Bearer","expires_in":\(settings.expiresIn),"access_token":"access-\(suffix)",\
             "refresh_token":"refresh-\(suffix)"}
             """)
-        }
-
-        // MARK: UI tests
-
-        /// How each UI test scenario differs from a compatible instance.
-        private static let scenarios: [String: @Sendable (inout Settings) -> Void] = [
-            "unreachable": { $0.unreachable = true },
-            "notMonica": { $0.isMonica = false },
-            "monicaTooOld": { $0.knowsTheIOSApp = false },
-            "appTooOld": { $0.minimumIOSVersion = "999.0" },
-            "registrationClosed": { $0.registrationEnabled = false },
-            "renewalRefused": {
-                $0.expiresIn = 1
-                $0.refusesRenewal = true
-            },
-            "shortLived": { $0.expiresIn = 1 },
-            "notAllowed": { $0.meAfterSignIn = .json(403, #"{"message":"Forbidden."}"#) },
-            "offlineAfterSignIn": { $0.meAfterSignIn = .failure(.notConnectedToInternet) },
-            "withVaults": { $0.vaults = threeVaults },
-            "manyVaults": { settings in
-                settings.vaults = (1 ... 150).map { Vault(id: "vault-\($0)", name: "Vault \($0)", isDefault: $0 == 1) }
-            },
-            "vaultLimit": { settings in
-                settings.vaults = [Vault(id: "personal", name: "Personal", isDefault: true, contactCount: 25)]
-                settings.vaultLimit = 1
-            },
-            "vaultsUnreachable": { $0.vaultListFailsAfter = 0 },
-            "vaultsOfflineAfterFirst": { settings in
-                settings.vaults = threeVaults
-                settings.vaultListFailsAfter = 1
-            },
-            "vaultGone": { settings in
-                settings.vaults = threeVaults
-                settings.goneVaultIDs = ["work"]
-            },
-            "slowVaults": { settings in
-                settings.vaults = threeVaults
-                settings.vaultListDelay = 2
-            },
-        ]
-
-        /// The fake the app uses for UI tests, from the `MONICA_UI_TEST_SERVER` scenario, or nil
-        /// when the app runs for real.
-        static func forUITests() -> FakeMonica? {
-            guard let scenario = ProcessInfo.processInfo.environment["MONICA_UI_TEST_SERVER"] else { return nil }
-            var settings = Settings()
-            scenarios[scenario]?(&settings)
-            return FakeMonica(settings: settings, host: wildcard)
-        }
-
-        /// Stands in for the browser sheet in UI tests: answers as if the person allowed access,
-        /// denied it or closed the sheet, from `MONICA_UI_TEST_BROWSER` (allow by default; slow
-        /// allows after two seconds, so a test can see the attempt in progress).
-        static func uiTestBrowser() -> Browser? {
-            let environment = ProcessInfo.processInfo.environment
-            guard environment["MONICA_UI_TEST_SERVER"] != nil else { return nil }
-            let answer = environment["MONICA_UI_TEST_BROWSER"] ?? "allow"
-            return { url in
-                try await Task.sleep(for: .milliseconds(answer == "slow" ? 2000 : 300))
-                let state = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                    .queryItems?.first { $0.name == "state" }?.value ?? ""
-                switch answer {
-                case "cancel":
-                    throw ASWebAuthenticationSessionError(.canceledLogin)
-                case "deny":
-                    return URL(string: "\(signInReturnAddress)?error=access_denied&state=\(state)") ?? url
-                default:
-                    return URL(string: "\(signInReturnAddress)?code=ui-test&state=\(state)") ?? url
-                }
-            }
         }
     }
 

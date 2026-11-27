@@ -20,7 +20,7 @@ final class MonicaClient: Sendable {
     /// invalidated: a request still on its way when the session ended must fail instead.
     fileprivate let isInvalidated = Mutex(false)
 
-    /// `configuration` is `.ephemeral` in the app; tests and UI tests add a stub protocol to it.
+    /// `configuration` is `.ephemeral` in the app; tests add a stub protocol to it.
     init(base: String, configuration: URLSessionConfiguration) {
         self.base = base
         baseOrigin = URL(string: base).flatMap(origin(of:))

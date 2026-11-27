@@ -27,7 +27,7 @@ runs:
         done
         if [ -z "$id" ]; then xcrun simctl list devices available; exit 1; fi
         # Once booted, an app is launched once: the first launch after a boot is very slow, and it
-        # then happens during the build instead of in the first UI test.
+        # then happens during the build instead of in the first test.
         nohup bash -c '
           xcrun simctl boot "$0" && xcrun simctl bootstatus "$0" -b > /dev/null
           echo "Booted at $(date +%T)"

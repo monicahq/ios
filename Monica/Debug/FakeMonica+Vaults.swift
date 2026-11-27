@@ -13,8 +13,7 @@
             return vaults(request, route: String(request.url.path()[range.upperBound...]))
         }
 
-        /// The vaults of the UI tests' `withVaults` account: one default, and the three ways of
-        /// counting contacts.
+        /// A typical account's vaults: one default, and the three ways of counting contacts.
         static let threeVaults = [
             Vault(id: "personal", name: "Personal", description: "Friends and the people I meet.", isDefault: true, contactCount: 25),
             Vault(id: "family", name: "Family", colour: "#4f8a49", contactCount: 1),
