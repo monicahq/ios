@@ -170,7 +170,7 @@ Paths are relative to this repository unless they start with `../monica/`.
 - [X] T060 Run the `accessibility-reviewer` agent on the changed screens and fix its findings
 - [X] T061 Run `LocalizationParityTests` and the whole definition of done: `xcodegen generate && swiftformat . && swiftlint --strict`, unit tests with `scripts/check-coverage.sh` (≥ 80%), then only the UI test classes of this feature (`WelcomeScreenUITests`, `InstanceSheetUITests`, `HomeScreenUITests`, `SignInJourneyUITests`)
 - [ ] T062 Run the manual pass of [quickstart.md](quickstart.md) §3 against a local Monica on the phase 2 branch, with VoiceOver and in French; take screenshots with the `take-screenshot` skill for the PR
-- [ ] T063 Update `docs/FEATURES.md` with the `feature-documentator` skill, then commit and open the iOS PR per the `commits` skill, stating it depends on the Monica PR of phase 2
+- [X] T063 Update `docs/FEATURES.md` with the `feature-documentator` skill, then commit and open the iOS PR per the `commits` skill, stating it depends on the Monica PR of phase 2
 
 ---
 
