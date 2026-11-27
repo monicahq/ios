@@ -19,6 +19,17 @@ struct SessionManagerLogOutTests {
         #expect(!harness.store.contains(.pendingRevocation))
     }
 
+    @Test func `logging out leaves no secret in the Keychain, even a sign-in in progress`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        _ = try await harness.sessionManager.startSignIn(harness.description(), isSignUp: false)
+
+        await harness.sessionManager.logOut()
+
+        #expect(SecretKey.allCases.allSatisfy { !harness.store.contains($0) })
+        #expect(harness.relaunched().session == nil)
+    }
+
     @Test func `logging out offline forgets the session now and tells the instance later`() async throws {
         let harness = Harness()
         try await harness.signIn()

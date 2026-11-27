@@ -6,11 +6,12 @@ import Testing
 /// The Keychain, in memory: what `SessionManager` stores, without touching the real Keychain.
 final class FakeSecretStore: SecretStore {
     private let values = Mutex<[SecretKey: Data]>([:])
-    /// Makes every write fail, like a Keychain that refuses.
-    let failsWrites: Bool
+    /// The keys whose writes fail, like a Keychain that refuses.
+    let refusedKeys: Set<SecretKey>
 
-    init(failsWrites: Bool = false) {
-        self.failsWrites = failsWrites
+    /// `failsWrites` refuses every key; `refusing` only the keys it names.
+    init(failsWrites: Bool = false, refusing: Set<SecretKey> = []) {
+        refusedKeys = failsWrites ? Set(SecretKey.allCases) : refusing
     }
 
     func read<Value: Decodable>(_ key: SecretKey, as type: Value.Type) -> Value? {
@@ -18,7 +19,7 @@ final class FakeSecretStore: SecretStore {
     }
 
     func write(_ value: some Encodable, for key: SecretKey) throws {
-        if failsWrites {
+        if refusedKeys.contains(key) {
             throw Refused()
         }
         let data = try JSONEncoder().encode(value)

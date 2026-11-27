@@ -212,6 +212,15 @@ struct SessionManagerSignInTests {
         }
     }
 
+    @Test func `a Keychain that refuses the session at the end fails the sign-in and stores nothing`() async throws {
+        let harness = Harness(store: FakeSecretStore(refusing: [.session]))
+
+        await #expect(throws: AuthError.signInFailed) { try await harness.signIn() }
+
+        #expect(harness.sessionManager.session == nil)
+        #expect(SecretKey.allCases.allSatisfy { !harness.store.contains($0) })
+    }
+
     @Test func `forgetting the attempt ignores its answer`() async throws {
         let harness = Harness()
         let page = try await harness.sessionManager.startSignIn(harness.description(), isSignUp: false)

@@ -136,6 +136,19 @@ struct NewVaultViewModelTests {
         #expect(viewModel.state.canCreate)
     }
 
+    @Test func `an instance answering not found says it gave an unexpected answer`() async throws {
+        let viewModel = try await signedIn()
+        viewModel.changeName("Book club")
+        harness.monica.settings.override = { request in
+            request.method == "POST" ? .json(404, #"{"message":"Not found."}"#) : nil
+        }
+
+        #expect(await viewModel.create() == nil)
+
+        #expect(viewModel.state.connectionError == .unexpectedAnswer)
+        #expect(viewModel.state.name == "Book club")
+    }
+
     @Test func `tapping twice creates one vault`() async throws {
         let viewModel = try await signedIn()
         viewModel.changeName("Book club")

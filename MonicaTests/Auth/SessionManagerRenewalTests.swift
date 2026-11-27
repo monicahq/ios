@@ -110,6 +110,28 @@ struct SessionManagerRenewalTests {
         #expect(harness.store.contains(.session))
     }
 
+    @Test func `twenty requests waiting on a renewal that cannot reach the instance all fail and keep the session`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        harness.monica.settings.unreachable = true
+        harness.clock.advance(by: 3600)
+        let sessionManager = harness.sessionManager
+
+        let requests = (0 ..< 20).map { _ in
+            Task { try await sessionManager.authorizedGet("/api/v1/me") }
+        }
+        var errors: [AuthError?] = []
+        for request in requests {
+            if case let .failure(error) = await request.result {
+                errors.append(error as? AuthError)
+            }
+        }
+
+        #expect(errors == Array(repeating: .unreachable, count: 20))
+        #expect(harness.sessionManager.session != nil)
+        #expect(harness.store.contains(.session))
+    }
+
     @Test func `a server error during renewal keeps the session`() async throws {
         let harness = Harness()
         try await harness.signIn()
@@ -166,6 +188,18 @@ struct SessionManagerRenewalTests {
 
         #expect(harness.sessionManager.session?.name == "Pam Beesly")
         #expect(harness.store.read(.session, as: Session.self)?.email == "pam@example.com")
+    }
+
+    @Test func `a profile that cannot be read keeps the session as it was`() async throws {
+        let harness = Harness()
+        try await harness.signIn()
+        let before = harness.sessionManager.session
+        harness.monica.settings.meAfterSignIn = .json(200, #"{"data":{}}"#)
+
+        await #expect(throws: AuthError.unexpectedAnswer) { try await harness.sessionManager.refreshPerson() }
+
+        #expect(harness.sessionManager.session == before)
+        #expect(harness.store.read(.session, as: Session.self) == before)
     }
 
     // MARK: Any request

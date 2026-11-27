@@ -110,4 +110,20 @@ struct InstanceCheckerTests {
 
         await #expect(throws: AuthError.noAppSignIn) { try await checker().check(base: monica.base) }
     }
+
+    // MARK: Trailing slashes
+
+    @Test(arguments: [
+        ("https://monica.test/", "https://monica.test"),
+        ("https://monica.test///", "https://monica.test"),
+        ("https://monica.test", "https://monica.test"),
+        ("", ""),
+    ])
+    func `an address loses every trailing slash`(address: String, trimmed: String) {
+        #expect(address.trimmingSuffix("/") == trimmed)
+    }
+
+    @Test func `an empty suffix leaves the text as it is`() {
+        #expect("abc".trimmingSuffix("") == "abc")
+    }
 }

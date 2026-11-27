@@ -123,6 +123,11 @@ struct VaultRepositoryTests {
         (.json(500, "<html>Oops</html>"), .failed(.unexpectedAnswer)),
         (.json(200, "not json"), .failed(.unexpectedAnswer)),
         (.json(422, "not json"), .failed(.unexpectedAnswer)),
+        (.json(404, #"{"message":"Not found."}"#), .notFound),
+        (.json(429, #"{"message":"Too Many Attempts."}"#), .failed(.unexpectedAnswer)),
+        (.json(503, "maintenance"), .failed(.unexpectedAnswer)),
+        (.json(200, #"{"data":[{"id":"a"}],"meta":{"total":1}}"#), .failed(.unexpectedAnswer)),
+        (.json(401, #"{"message":"Unauthenticated."}"#), .failed(.sessionEnded)),
         (.failure(.notConnectedToInternet), .failed(.unreachable)),
         (.failure(.timedOut), .failed(.timeout)),
     ])
@@ -133,6 +138,18 @@ struct VaultRepositoryTests {
         }
 
         await #expect(throws: error) { _ = try await repository.vaults() }
+    }
+
+    @Test func `creating offline creates nothing and says so`() async throws {
+        let repository = try await signedIn()
+        harness.monica.settings.unreachable = true
+
+        await #expect(throws: ApiError.failed(.unreachable)) {
+            _ = try await repository.create(NewVault(name: "Work", description: nil, colour: .blue, makeDefault: false))
+        }
+
+        harness.monica.settings.unreachable = false
+        #expect(try await repository.vaults().isEmpty)
     }
 
     @Test func `nothing is asked when signed out`() async {
