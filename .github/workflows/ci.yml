@@ -35,16 +35,17 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      # Boots in the background during the build: booting after the build is twice as slow.
+      - uses: ./.github/actions/boot-simulator
       - uses: ./.github/actions/setup
-      # Built before the simulator boots: a booting simulator keeps the runner's few cores busy
-      # for minutes, and the build then takes several times longer. arm64 only, the runner's.
+      # arm64 only, the runner's.
       - name: Build for testing
         run: >
           xcodebuild build-for-testing -project Monica.xcodeproj -scheme Monica
           -destination 'generic/platform=iOS Simulator' ARCHS=arm64
           -enableCodeCoverage YES COMPILER_INDEX_STORE_ENABLE=NO
           -derivedDataPath build/derived-data
-      - uses: ./.github/actions/boot-simulator
+      - uses: ./.github/actions/wait-for-simulator
       - name: Unit tests
         run: >
           xcodebuild test-without-building -project Monica.xcodeproj -scheme Monica
@@ -81,15 +82,16 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
+      # Boots in the background during the build, as in the unit tests job.
+      - uses: ./.github/actions/boot-simulator
       - uses: ./.github/actions/setup
-      # Built before the simulator boots, as in the unit tests job.
       - name: Build for testing
         run: >
           xcodebuild build-for-testing -project Monica.xcodeproj -scheme Monica
           -destination 'generic/platform=iOS Simulator' ARCHS=arm64
           -enableCodeCoverage NO COMPILER_INDEX_STORE_ENABLE=NO
           -derivedDataPath build/derived-data
-      - uses: ./.github/actions/boot-simulator
+      - uses: ./.github/actions/wait-for-simulator
       # A test that hangs (the app failing to launch on the runner) is stopped after 3 minutes
       # instead of blocking the job, and a failed test runs once more: a runner hiccup passes on
       # the second try, a real bug fails twice.

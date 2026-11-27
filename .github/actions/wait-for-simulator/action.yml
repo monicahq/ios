@@ -1,0 +1,14 @@
+name: Wait for the simulator
+description: Wait until the simulator started by boot-simulator has finished booting
+
+runs:
+  using: composite
+  steps:
+    # Booting a cold simulator before the tests avoids "Failed to launch".
+    - name: Wait for the simulator
+      shell: bash
+      run: |
+        pid=$(cat "$RUNNER_TEMP/simulator-boot.pid")
+        while kill -0 "$pid" 2> /dev/null; do sleep 1; done
+        cat "$RUNNER_TEMP/simulator-boot.log"
+        xcrun simctl bootstatus "$SIMULATOR_ID" -b
