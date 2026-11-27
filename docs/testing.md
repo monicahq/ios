@@ -79,13 +79,26 @@ revocation and `/api/v1/me`.
   answer a request themselves with `settings.override`, and read the `requests` it received.
   `MonicaTests/Support/Fakes.swift` wires it to the app's types with an in-memory Keychain
   (`FakeSecretStore`) and a clock moved by hand (`FakeClock`), in `Harness`.
+- The fake also holds the account's vaults (`settings.vaults`, empty like a new account) and
+  answers the vault endpoints: the list (paged), one vault, and creating one, with a plan ceiling
+  (`vaultLimit`), vaults deleted meanwhile (`goneVaultIDs`), a list that goes offline after a number
+  of answers (`vaultListFailsAfter`) or answers late (`vaultListDelay`).
 - UI tests pick a scenario with `launchApp(server:browser:)`: the app then answers every host with
   that fake (compatible, unreachable, notMonica, monicaTooOld, appTooOld, registrationClosed,
-  renewalRefused, shortLived, notAllowed, offlineAfterSignIn) and replaces iOS's authentication
+  renewalRefused, shortLived, notAllowed, offlineAfterSignIn, and for vaults withVaults,
+  manyVaults, vaultLimit, vaultsUnreachable, vaultsOfflineAfterFirst, vaultGone, slowVaults) and
+  replaces iOS's authentication
   sheet, which UI tests cannot drive, with an answer (allow, deny, cancel, or slow). Each launch
   also gets a Keychain service of its own, from `MONICA_DEFAULTS_SUITE`.
 - The real sheet and the real instance are checked by hand before a pull request (see the
   feature's `quickstart.md`).
+
+## Appearance
+
+UI tests show dark mode with `XCUIDevice.shared.appearance = .dark` (reset afterwards), and draw
+the floating controls as Reduce Transparency does with `launchApp(reduceTransparency: true)` (the
+`MONICA_UI_TEST_REDUCE_TRANSPARENCY` variable, read in Debug builds only), since a test cannot
+change the simulator's accessibility settings.
 
 ## Languages
 

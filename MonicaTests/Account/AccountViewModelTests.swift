@@ -3,18 +3,29 @@ import Foundation
 import Testing
 
 @MainActor
-struct HomeViewModelTests {
+struct AccountViewModelTests {
     private let harness = Harness()
 
-    private func signedInViewModel() async throws -> HomeViewModel {
+    private func signedInViewModel() async throws -> AccountViewModel {
         try await harness.signIn()
-        return HomeViewModel(sessionManager: harness.sessionManager, instanceRepository: harness.repository, checker: harness.checker)
+        return AccountViewModel(sessionManager: harness.sessionManager, instanceRepository: harness.repository, checker: harness.checker)
     }
 
     @Test func `shows who is signed in, and where`() async throws {
         let viewModel = try await signedInViewModel()
 
-        #expect(viewModel.state == HomeUiState(name: "Michael Scott", instanceURL: harness.monica.base))
+        #expect(viewModel.state == AccountUiState(name: "Michael Scott", instanceURL: harness.monica.base))
+    }
+
+    @Test func `the account button shows the initials of the name`() async throws {
+        let viewModel = try await signedInViewModel()
+
+        #expect(viewModel.state.initials == "MS")
+    }
+
+    @Test func `a name without letters shows no initials`() {
+        #expect(AccountUiState(name: "", instanceURL: "https://example.com").initials == nil)
+        #expect(AccountUiState(name: "123", instanceURL: "https://example.com").initials == nil)
     }
 
     @Test func `refreshing shows the name the web has now`() async throws {
@@ -26,6 +37,7 @@ struct HomeViewModelTests {
         await viewModel.refresh()
 
         #expect(viewModel.state.name == "Pam Beesly")
+        #expect(viewModel.state.initials == "PB")
     }
 
     @Test func `refreshing offline says so and stays signed in`() async throws {

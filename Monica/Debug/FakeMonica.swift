@@ -16,12 +16,26 @@
             let url: URL
             let headers: [String: String]
             let form: [String: String]
+            /// The raw body, for JSON posts.
+            var body = Data()
+        }
+
+        /// A vault the fake holds, as the API describes one.
+        struct Vault: Sendable {
+            var id: String
+            var name: String
+            var description: String?
+            var colour = "#3f5fd0"
+            var isDefault = false
+            var contactCount = 0
         }
 
         enum Answer: Sendable {
             case json(Int, String)
             case failure(URLError.Code)
             case redirect(String)
+            /// The answer, given after a while: to see a screen while it waits.
+            indirect case delayed(TimeInterval, Answer)
         }
 
         struct Settings: Sendable {
@@ -42,13 +56,25 @@
             var meAfterSignIn: Answer?
             /// Checked before everything else; nil to answer normally.
             var override: (@Sendable (Request) -> Answer?)?
+            /// The account's vaults, in their arranged order. Every account starts with none.
+            var vaults: [Vault] = []
+            /// How many vaults the plan allows; nil for no ceiling.
+            var vaultLimit: Int?
+            /// Vaults the list shows but that answer 404 when read: deleted meanwhile.
+            var goneVaultIDs: Set<String> = []
+            /// The list of vaults fails once it has answered this many times (offline afterwards).
+            var vaultListFailsAfter: Int?
+            /// How long the list of vaults takes to answer.
+            var vaultListDelay: TimeInterval = 0
         }
 
-        private struct State {
+        /// What the fake holds and counts. Internal for its extensions in other files.
+        struct State {
             var settings: Settings
             var requests: [Request] = []
             var meCount = 0
             var tokenCount = 0
+            var vaultListCount = 0
         }
 
         private static let registry = Mutex<[String: FakeMonica]>([:])
@@ -56,7 +82,7 @@
 
         let host: String
         let path: String
-        private let state: Mutex<State>
+        let state: Mutex<State>
 
         /// A fake on a host of its own (`<uuid>.monica.test`), so tests running at the same time
         /// never share one.
@@ -112,8 +138,8 @@
             if let answer = settings.override?(request) {
                 return answer
             }
-            if settings.unreachable {
-                return .failure(.cannotConnectToHost)
+            if let answer = vaultsOrUnreachable(request, settings: settings) {
+                return answer
             }
             // Routed by the end of the path, so the UI tests' fake also plays an instance served
             // under a path; the instance address is what comes before the route.
@@ -209,6 +235,27 @@
             "shortLived": { $0.expiresIn = 1 },
             "notAllowed": { $0.meAfterSignIn = .json(403, #"{"message":"Forbidden."}"#) },
             "offlineAfterSignIn": { $0.meAfterSignIn = .failure(.notConnectedToInternet) },
+            "withVaults": { $0.vaults = threeVaults },
+            "manyVaults": { settings in
+                settings.vaults = (1 ... 150).map { Vault(id: "vault-\($0)", name: "Vault \($0)", isDefault: $0 == 1) }
+            },
+            "vaultLimit": { settings in
+                settings.vaults = [Vault(id: "personal", name: "Personal", isDefault: true, contactCount: 25)]
+                settings.vaultLimit = 1
+            },
+            "vaultsUnreachable": { $0.vaultListFailsAfter = 0 },
+            "vaultsOfflineAfterFirst": { settings in
+                settings.vaults = threeVaults
+                settings.vaultListFailsAfter = 1
+            },
+            "vaultGone": { settings in
+                settings.vaults = threeVaults
+                settings.goneVaultIDs = ["work"]
+            },
+            "slowVaults": { settings in
+                settings.vaults = threeVaults
+                settings.vaultListDelay = 2
+            },
         ]
 
         /// The fake the app uses for UI tests, from the `MONICA_UI_TEST_SERVER` scenario, or nil
@@ -243,8 +290,9 @@
         }
     }
 
-    /// Routes requests to the fake of their host.
-    final class FakeMonicaProtocol: URLProtocol {
+    /// Routes requests to the fake of their host. Unchecked: URL loading hands a protocol from one
+    /// of its threads to another by design, and a delayed answer finishes on another queue.
+    final class FakeMonicaProtocol: URLProtocol, @unchecked Sendable {
         override static func canInit(with _: URLRequest) -> Bool {
             true
         }
@@ -258,12 +306,19 @@
                 client?.urlProtocol(self, didFailWithError: URLError(.cannotFindHost))
                 return
             }
+            let body = Self.body(of: request)
             let answer = fake.answer(FakeMonica.Request(
                 method: request.httpMethod ?? "GET",
                 url: url,
                 headers: request.allHTTPHeaderFields ?? [:],
-                form: Self.form(of: request)
+                form: request.value(forHTTPHeaderField: "Content-Type") == "application/x-www-form-urlencoded"
+                    ? Self.form(from: body) : [:],
+                body: body
             ))
+            respond(url: url, answer: answer)
+        }
+
+        private func respond(url: URL, answer: FakeMonica.Answer) {
             switch answer {
             case let .failure(code):
                 client?.urlProtocol(self, didFailWithError: URLError(code))
@@ -271,6 +326,10 @@
                 respond(url: url, status: 302, headers: ["Location": location], body: Data())
             case let .json(status, body):
                 respond(url: url, status: status, headers: ["Content-Type": "application/json"], body: Data(body.utf8))
+            case let .delayed(seconds, answer):
+                DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { [self] in
+                    respond(url: url, answer: answer)
+                }
             }
         }
 
@@ -285,8 +344,18 @@
             client?.urlProtocolDidFinishLoading(self)
         }
 
-        /// The fields of a form post. URLSession hands the body to protocols as a stream.
-        private static func form(of request: URLRequest) -> [String: String] {
+        /// The fields of a form post.
+        private static func form(from body: Data) -> [String: String] {
+            var components = URLComponents()
+            components.percentEncodedQuery = String(bytes: body, encoding: .utf8)
+            return Dictionary(
+                (components.queryItems ?? []).map { ($0.name, $0.value ?? "") },
+                uniquingKeysWith: { $1 }
+            )
+        }
+
+        /// The body of a request. URLSession hands it to protocols as a stream, readable once.
+        private static func body(of request: URLRequest) -> Data {
             var body = request.httpBody ?? Data()
             if body.isEmpty, let stream = request.httpBodyStream {
                 stream.open()
@@ -298,12 +367,7 @@
                     body.append(contentsOf: buffer[0 ..< count])
                 }
             }
-            var components = URLComponents()
-            components.percentEncodedQuery = String(bytes: body, encoding: .utf8)
-            return Dictionary(
-                (components.queryItems ?? []).map { ($0.name, $0.value ?? "") },
-                uniquingKeysWith: { $1 }
-            )
+            return body
         }
     }
 #endif

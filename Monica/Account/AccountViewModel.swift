@@ -1,11 +1,11 @@
 import Observation
 
-/// The placeholder home of a signed-in person: who they are, where, logging out and switching
-/// instance.
+/// The account of a signed-in person, opened from the list of vaults: who they are, where,
+/// logging out and switching instance.
 @MainActor
 @Observable
-final class HomeViewModel {
-    private(set) var state: HomeUiState
+final class AccountViewModel {
+    private(set) var state: AccountUiState
     private let sessionManager: SessionManager
     private let instanceRepository: InstanceRepository
     private let checker: InstanceChecker
@@ -14,7 +14,7 @@ final class HomeViewModel {
         self.sessionManager = sessionManager
         self.instanceRepository = instanceRepository
         self.checker = checker
-        state = HomeUiState(
+        state = AccountUiState(
             name: sessionManager.session?.name ?? "",
             instanceURL: sessionManager.session?.instance ?? instanceRepository.url
         )

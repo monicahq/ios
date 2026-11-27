@@ -7,6 +7,7 @@ struct MonicaApp: App {
     private let instanceRepository: InstanceRepository
     private let checker: InstanceChecker
     private let browser: Browser?
+    private let vaultRepository: VaultRepository
 
     init() {
         let defaults = Self.defaults()
@@ -26,6 +27,7 @@ struct MonicaApp: App {
         self.instanceRepository = instanceRepository
         self.checker = checker
         self.browser = browser
+        vaultRepository = VaultRepository(sessionManager: sessionManager)
         _sessionManager = State(initialValue: sessionManager)
         _welcome = State(initialValue: WelcomeViewModel(
             instanceRepository: instanceRepository,
@@ -39,8 +41,9 @@ struct MonicaApp: App {
             RootView(
                 sessionManager: sessionManager,
                 welcome: welcome,
-                makeHome: { [sessionManager, instanceRepository, checker] in
-                    HomeViewModel(sessionManager: sessionManager, instanceRepository: instanceRepository, checker: checker)
+                vaultRepository: vaultRepository,
+                makeAccount: { [sessionManager, instanceRepository, checker] in
+                    AccountViewModel(sessionManager: sessionManager, instanceRepository: instanceRepository, checker: checker)
                 },
                 browser: browser
             )

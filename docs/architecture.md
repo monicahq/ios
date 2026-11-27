@@ -105,8 +105,9 @@ People sign in on the instance's own web pages (OAuth 2.0 with PKCE), never in t
 
 - `Auth/SessionManager` (`@MainActor @Observable`) is the only owner of the session. It starts and
   completes sign-in, renews access (one renewal at a time, every caller awaits it), signs out, and
-  exposes `state` (signed in or out, and why). No other type reads a token; screens call
-  `authorizedGet` or a method of the session manager.
+  exposes `state` (signed in or out, and why). No other type reads a token: repositories call
+  `authorized(method, path, json:)`, which renews and retries, and get the answer whatever its
+  status (`authorizedGet` is the shortcut for callers that only expect success).
 - `Auth/MonicaClient` talks to one instance. It is where tokens are kept at home: a bearer token
   goes only to the instance's own origin, redirects are never followed, the session has no
   cookies or cache. A client stops working once its session ends.
@@ -115,11 +116,26 @@ People sign in on the instance's own web pages (OAuth 2.0 with PKCE), never in t
 - Secrets (the session, a sign-in in progress, a logout to tell) live in the Keychain through
   `Auth/SecretStore`, readable on this device only. A fresh install wipes what an earlier install
   left there.
-- `RootView` shows the welcome screen or the home from the session state, and receives the
+- `RootView` shows the welcome screen or the list of vaults from the session state, and receives the
   return address (`com.monicahq.ios:/oauth/callback`, declared in `Config/Info.plist`) when iOS
   opens the app with it.
 - Release builds talk to instances over HTTPS only; Debug builds also accept `http` (see
   `Config/Info-Debug.plist`) for a Monica on the developer's machine.
+
+## Calling the API
+
+Each kind of data has one repository, its single source of truth (`Data/Vaults/VaultRepository`):
+it builds the requests, decodes the answers, and turns statuses into `Data/ApiError`
+(`failed(AuthError)`, `notFound` for a 404, `invalid(Refusal)` for a 422 with the instance's own
+words). View models call only repositories, and nothing the API returns is stored on the phone.
+Repositories have no protocol: tests run them against the fake Monica (see `docs/testing.md`).
+
+## The signed-in app
+
+`Vaults/VaultsRoute` is the signed-in home. It owns the `NavigationStack` (typed destinations such
+as `VaultDestination`), the account sheet (`Account/AccountSheetView`, which opens the instance
+sheet over it) and the new vault sheet. The list hides the system navigation bar and draws its own
+top bar, as the design does; pushed screens use the system bar and its Back button.
 
 ## Languages
 
@@ -138,3 +154,11 @@ People sign in on the instance's own web pages (OAuth 2.0 with PKCE), never in t
 each colour: use `Color.page`, `Color.ink`, `Color.muted`... and the `PrimaryButtonStyle` and
 `OutlinedButtonStyle` in screens, never raw colours. Text uses the system text styles so it follows
 Dynamic Type.
+
+- Screens of the signed-in app sit on the grouped grey (`Color.groupedPage`) with cards in
+  `Color.groupedCard`, and secondary text in `Color.groupedMuted`, which keeps 4.5:1 on that grey
+  (`Color.muted` does not).
+- A vault's colour is one of eight pairs (initial and tint, `Colors/Vault`), measured at 4.5:1 in
+  light and dark; `Theme/VaultColours.swift` maps `VaultColour` to them and to a spoken name.
+- Controls floating over content use `Theme/FloatingStyles.swift`: Liquid Glass from iOS 26, the
+  standard material or a solid fill before, and solid with Reduce Transparency.

@@ -187,18 +187,31 @@ final class SessionManager {
         state = .signedIn(session)
     }
 
-    /// A GET on the API of the signed-in instance. Renews access when it has expired, or once when
-    /// the instance answers "not authenticated", and retries the request once with the new access.
+    /// A GET on the API of the signed-in instance, for callers that only expect success: any other
+    /// answer is an error.
     func authorizedGet(_ path: String) async throws(AuthError) -> Data {
+        let response = try await authorized("GET", path)
+        switch response.status {
+        case 200 ..< 300: return response.data
+        case 403: throw .notAllowed
+        default: throw .unexpectedAnswer
+        }
+    }
+
+    /// A request to the API of the signed-in instance. Renews access when it has expired, or once
+    /// when the instance answers "not authenticated", and retries the request once with the new
+    /// access. Returns the answer whatever its status (other than 401), so a repository can tell
+    /// "not found" or "refused" from a failure.
+    func authorized(_ method: String, _ path: String, json: Data? = nil) async throws(AuthError) -> MonicaClient.Response {
         guard let session else { throw .sessionEnded }
         let generation = generation
         let client = sessionClient(for: session)
         guard let url = client.url(path) else { throw .unexpectedAnswer }
         var token = session.needsRenewal(at: now()) ? try await renew(after: session.accessToken) : session.accessToken
-        var response = try await client.get(url, token: token)
+        var response = try await client.send(method: method, url: url, json: json, token: token)
         if response.status == 401 {
             token = try await renew(after: token)
-            response = try await client.get(url, token: token)
+            response = try await client.send(method: method, url: url, json: json, token: token)
             if response.status == 401 {
                 // Renewed and still refused: the session is over, and asking again would loop.
                 if generation == self.generation {
@@ -208,11 +221,7 @@ final class SessionManager {
             }
         }
         guard generation == self.generation else { throw .cancelled }
-        switch response.status {
-        case 200 ..< 300: return response.data
-        case 403: throw .notAllowed
-        default: throw .unexpectedAnswer
-        }
+        return response
     }
 
     /// Renews access, once for every caller: if another caller already renewed since `staleToken`

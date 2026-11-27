@@ -1,5 +1,5 @@
-/// Everything the placeholder home shows, until the signed-in app (vaults, contacts) arrives.
-struct HomeUiState: Equatable {
+/// Everything the account sheet shows: who is signed in, where, and the ways out.
+struct AccountUiState: Equatable {
     var name: String
     var instanceURL: String
     var isConfirmingLogout = false
@@ -8,4 +8,9 @@ struct HomeUiState: Equatable {
     var confirmSwitchTo: String?
     /// Something to tell the person while they stay signed in (offline, not allowed...).
     var message: AuthError?
+
+    /// The letters on the account button; nil when the name has none, so a symbol is shown.
+    var initials: String? {
+        personInitials(name)
+    }
 }

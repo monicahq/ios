@@ -6,19 +6,25 @@ import XCTest
 ///
 /// The app never reaches the network in UI tests: every instance is a fake Monica playing
 /// `server` (see `FakeMonica.forUITests()`: compatible, unreachable, notMonica, monicaTooOld,
-/// appTooOld, registrationClosed, renewalRefused, shortLived, notAllowed, offlineAfterSignIn), and
-/// the browser sheet answers `browser` (allow, deny or cancel).
+/// appTooOld, registrationClosed, renewalRefused, shortLived, notAllowed, offlineAfterSignIn, and
+/// for vaults withVaults, manyVaults, vaultLimit, vaultsUnreachable, vaultsOfflineAfterFirst,
+/// vaultGone, slowVaults), and the browser sheet answers `browser` (allow, deny or cancel).
+/// `reduceTransparency` draws the floating controls solid, as the system setting does.
 @MainActor
 func launchApp(
     language: String? = nil,
     textSize: String? = nil,
     preferences: String = UUID().uuidString,
     server: String = "compatible",
-    browser: String = "allow"
+    browser: String = "allow",
+    reduceTransparency: Bool = false
 ) -> XCUIApplication {
     let app = XCUIApplication()
     app.launchEnvironment["MONICA_UI_TEST_SERVER"] = server
     app.launchEnvironment["MONICA_UI_TEST_BROWSER"] = browser
+    if reduceTransparency {
+        app.launchEnvironment["MONICA_UI_TEST_REDUCE_TRANSPARENCY"] = "1"
+    }
     if let language {
         app.launchArguments += ["-AppleLanguages", "(\(language))", "-AppleLocale", language]
     }
@@ -63,15 +69,36 @@ extension XCUIApplication {
     }
 }
 
-/// The home's heading once the fake Monica signed the person in.
-let homeGreeting = "Hello, Michael Scott"
+/// The heading of the list of vaults, where a signed-in person lands.
+let vaultsTitle = "All your vaults"
 
 @MainActor
 extension XCUIApplication {
-    /// Taps Log in on the welcome screen and waits for the home.
+    /// Taps Log in on the welcome screen and waits for the list of vaults.
     func logIn(file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(buttons["Log in"].waitForExistence(timeout: 10), file: file, line: line)
         buttons["Log in"].scrolledTo(in: self).tap()
-        XCTAssertTrue(staticTexts[homeGreeting].waitForExistence(timeout: 10), file: file, line: line)
+        XCTAssertTrue(staticTexts[vaultsTitle].waitForExistence(timeout: 10), file: file, line: line)
+    }
+
+    /// Opens the account sheet from the list of vaults.
+    func openAccount(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(buttons["Your account"].waitForExistence(timeout: 10), file: file, line: line)
+        buttons["Your account"].tap()
+        XCTAssertTrue(buttons["Log out"].waitForExistence(timeout: 5), file: file, line: line)
+    }
+
+    /// Logs out from the account sheet, confirming, and waits for the welcome screen.
+    func logOut(file: StaticString = #filePath, line: UInt = #line) {
+        openAccount(file: file, line: line)
+        buttons["Log out"].scrolledTo(in: self).tap()
+        XCTAssertTrue(alerts["Log out?"].waitForExistence(timeout: 5), file: file, line: line)
+        alerts.buttons["Log out"].tap()
+        XCTAssertTrue(staticTexts["Welcome to Monica"].waitForExistence(timeout: 10), file: file, line: line)
+    }
+
+    /// The card of a vault, found by the start of what VoiceOver reads ("Personal, 25 contacts...").
+    func vaultCard(_ name: String) -> XCUIElement {
+        buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "\(name),")).firstMatch
     }
 }

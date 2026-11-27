@@ -17,7 +17,21 @@ private struct Localization: Decodable {
         var value: String
     }
 
+    struct Variations: Decodable {
+        var plural: [String: Localization]?
+    }
+
     var stringUnit: StringUnit?
+    var variations: Variations?
+
+    /// The texts of this language: one, or one per plural form (zero, one, other...).
+    var units: [String: StringUnit] {
+        if let plural = variations?.plural {
+            plural.compactMapValues(\.stringUnit)
+        } else {
+            stringUnit.map { ["": $0] } ?? [:]
+        }
+    }
 }
 
 /// Every language must have every string, with the same placeholders, so that a translation is
@@ -50,19 +64,25 @@ struct LocalizationParityTests {
     @Test(arguments: supportedLanguages)
     func `every string is translated`(language: String) throws {
         for (key, entry) in try catalog().strings {
-            let unit = entry.localizations?[language]?.stringUnit
-            #expect(unit?.state == "translated", "\(key) in \(language)")
-            #expect(unit?.value.isEmpty == false, "\(key) in \(language)")
+            let units = entry.localizations?[language]?.units ?? [:]
+            #expect(!units.isEmpty, "\(key) in \(language)")
+            #expect(Set(units.keys) == Set((entry.localizations?["en"]?.units ?? [:]).keys), "\(key) in \(language)")
+            for (form, unit) in units {
+                #expect(unit.state == "translated", "\(key) \(form) in \(language)")
+                #expect(!unit.value.isEmpty, "\(key) \(form) in \(language)")
+            }
         }
     }
 
     @Test(arguments: supportedLanguages)
     func `every translation keeps the English placeholders`(language: String) throws {
         for (key, entry) in try catalog().strings {
-            guard let english = entry.localizations?["en"]?.stringUnit?.value,
-                  let translated = entry.localizations?[language]?.stringUnit?.value
-            else { continue }
-            #expect(placeholders(english) == placeholders(translated), "\(key) in \(language)")
+            let english = entry.localizations?["en"]?.units ?? [:]
+            let translated = entry.localizations?[language]?.units ?? [:]
+            for (form, unit) in english {
+                guard let translation = translated[form] else { continue }
+                #expect(placeholders(unit.value) == placeholders(translation.value), "\(key) \(form) in \(language)")
+            }
         }
     }
 }

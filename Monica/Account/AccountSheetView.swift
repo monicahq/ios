@@ -1,31 +1,13 @@
 import SwiftUI
 
-/// Connects `HomeScreen` to its `HomeViewModel`.
-struct HomeRoute: View {
-    @State var viewModel: HomeViewModel
-
-    var body: some View {
-        HomeScreen(
-            state: viewModel.state,
-            onLogOut: { viewModel.askToLogOut() },
-            onConfirmLogOut: { Task { await viewModel.logOut() } },
-            onCancelLogOut: { viewModel.cancelLogOut() },
-            onOpenInstanceSheet: { viewModel.openInstanceSheet() },
-            onDraftChange: { viewModel.changeDraft($0) },
-            onResetDraft: { viewModel.resetDraft() },
-            onDismissInstanceSheet: { viewModel.dismissInstanceSheet() },
-            onSaveInstance: { Task { await viewModel.saveInstance() } },
-            onConfirmSwitch: { url in Task { await viewModel.switchInstance(to: url) } },
-            onCancelSwitch: { viewModel.cancelSwitch() }
-        )
-        .task { await viewModel.refresh() }
-    }
-}
-
-/// The signed-in home, a placeholder until the signed-in app (vaults, contacts) arrives: who is
-/// signed in, on which instance, and the ways out. Stateless.
-struct HomeScreen: View {
-    let state: HomeUiState
+/// The account of the signed-in person, opened from the list of vaults: who is signed in, on which
+/// instance, and the ways out. Stateless.
+///
+/// Laid out as the instance sheet (opaque background, its own Close button), since a system bar
+/// over the iOS 26 sheet glass fails the accessibility audit. The instance sheet opens over it.
+struct AccountSheetView: View {
+    let state: AccountUiState
+    let onClose: () -> Void
     let onLogOut: () -> Void
     let onConfirmLogOut: () -> Void
     let onCancelLogOut: () -> Void
@@ -37,29 +19,29 @@ struct HomeScreen: View {
     let onConfirmSwitch: (String) -> Void
     let onCancelSwitch: () -> Void
 
-    @AccessibilityFocusState private var isGreetingFocused: Bool
-
-    private var greeting: String {
-        state.name.isEmpty ? String(localized: "home_greeting_no_name") : String(format: String(localized: "home_greeting"), state.name)
+    private var title: String {
+        state.name.isEmpty ? String(localized: "account_button") : state.name
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(greeting)
-                    .font(.largeTitle.weight(.semibold))
+                Button("account_close", action: onClose)
+                    .buttonStyle(TextButtonStyle())
+                    .padding(.leading, -12)
+                Text(title)
+                    .font(.title2.weight(.semibold))
                     .foregroundStyle(Color.ink)
                     .accessibilityAddTraits(.isHeader)
-                    .accessibilityFocused($isGreetingFocused)
                 Button(action: onOpenInstanceSheet) {
                     HStack(spacing: 8) {
                         Image(systemName: "server.rack")
                             .accessibilityHidden(true)
-                        Text(String(format: String(localized: "home_connected"), instanceHost(state.instanceURL)))
+                        Text(String(format: String(localized: "account_connected"), instanceHost(state.instanceURL)))
                             .multilineTextAlignment(.leading)
                     }
                     .font(.body)
-                    .foregroundStyle(Color.muted)
+                    .foregroundStyle(Color.groupedMuted)
                     .frame(minHeight: 44)
                     .contentShape(Rectangle())
                 }
@@ -75,7 +57,7 @@ struct HomeScreen: View {
                     .foregroundStyle(Color.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 }
-                Button("home_log_out", action: onLogOut)
+                Button("account_log_out", action: onLogOut)
                     .buttonStyle(OutlinedButtonStyle())
                     .padding(.top, 16)
             }
@@ -84,13 +66,7 @@ struct HomeScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(Color.page)
-        // Shown in place of the welcome screen once signed in: VoiceOver starts on the greeting,
-        // once the browser sheet has handed focus back.
-        .task {
-            try? await Task.sleep(for: .milliseconds(300))
-            isGreetingFocused = true
-        }
+        .background(Color.groupedCard)
         .onChange(of: state.message) {
             if let message = state.message {
                 AccessibilityNotification.Announcement(String(localized: message.message)).post()
@@ -104,7 +80,7 @@ struct HomeScreen: View {
                 }
             })
         ) {
-            Button("home_log_out", role: .destructive, action: onConfirmLogOut)
+            Button("account_log_out", role: .destructive, action: onConfirmLogOut)
             Button("instance_sheet_cancel", role: .cancel, action: onCancelLogOut)
         } message: {
             Text("log_out_message")
@@ -148,9 +124,9 @@ struct HomeScreen: View {
 }
 
 @MainActor
-private func homePreview(_ state: HomeUiState) -> some View {
-    HomeScreen(
-        state: state,
+private func accountPreview(_ state: AccountUiState) -> some View {
+    AccountSheetView(
+        state: state, onClose: {},
         onLogOut: {}, onConfirmLogOut: {}, onCancelLogOut: {}, onOpenInstanceSheet: {},
         onDraftChange: { _ in }, onResetDraft: {}, onDismissInstanceSheet: {}, onSaveInstance: {},
         onConfirmSwitch: { _ in }, onCancelSwitch: {}
@@ -158,10 +134,10 @@ private func homePreview(_ state: HomeUiState) -> some View {
 }
 
 #Preview("Light") {
-    homePreview(HomeUiState(name: "Michael Scott", instanceURL: defaultInstanceURL))
+    accountPreview(AccountUiState(name: "Michael Scott", instanceURL: defaultInstanceURL))
 }
 
 #Preview("Offline, dark") {
-    homePreview(HomeUiState(name: "Michael Scott", instanceURL: defaultInstanceURL, message: .unreachable))
+    accountPreview(AccountUiState(name: "Michael Scott", instanceURL: defaultInstanceURL, message: .unreachable))
         .preferredColorScheme(.dark)
 }

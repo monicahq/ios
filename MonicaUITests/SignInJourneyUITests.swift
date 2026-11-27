@@ -16,7 +16,7 @@ final class SignInJourneyUITests: XCTestCase {
         app.terminate()
         let relaunched = launchApp(preferences: preferences)
 
-        XCTAssertTrue(relaunched.staticTexts[homeGreeting].waitForExistence(timeout: 10))
+        XCTAssertTrue(relaunched.staticTexts[vaultsTitle].waitForExistence(timeout: 10))
     }
 
     /// US2: choose a self-hosted instance served under a path, then log in to it.
@@ -30,6 +30,7 @@ final class SignInJourneyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Instance: example.com/monica"].waitForExistence(timeout: 10))
 
         app.logIn()
+        app.openAccount()
 
         XCTAssertTrue(app.buttons["Connected to example.com/monica"].exists)
     }
@@ -42,7 +43,7 @@ final class SignInJourneyUITests: XCTestCase {
 
         app.buttons["Sign up"].scrolledTo(in: app).tap()
 
-        XCTAssertTrue(app.staticTexts[homeGreeting].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts[vaultsTitle].waitForExistence(timeout: 10))
     }
 
     /// US4: access expires right away and is renewed without the person noticing.
@@ -52,9 +53,9 @@ final class SignInJourneyUITests: XCTestCase {
 
         app.logIn()
 
-        // The home reloads the person on appear, which renews the expired access.
+        // The list loads the vaults on appear, which renews the expired access.
         XCTAssertFalse(app.staticTexts["Your session was ended. Log in again."].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts[homeGreeting].exists)
+        XCTAssertTrue(app.staticTexts[vaultsTitle].exists)
     }
 
     /// US5: log out, and stay logged out after a relaunch.
@@ -64,10 +65,7 @@ final class SignInJourneyUITests: XCTestCase {
         let app = launchApp(preferences: preferences)
         app.logIn()
 
-        app.buttons["Log out"].tap()
-        XCTAssertTrue(app.alerts["Log out?"].waitForExistence(timeout: 5))
-        app.alerts.buttons["Log out"].tap()
-        XCTAssertTrue(app.staticTexts["Welcome to Monica"].waitForExistence(timeout: 10))
+        app.logOut()
         app.terminate()
         let relaunched = launchApp(preferences: preferences)
 

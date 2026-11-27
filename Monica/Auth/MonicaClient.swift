@@ -39,8 +39,23 @@ final class MonicaClient: Sendable {
     }
 
     func get(_ url: URL, token: String? = nil) async throws(AuthError) -> Response {
+        try await send(method: "GET", url: url, json: nil, token: token)
+    }
+
+    /// A JSON post, as the API's create endpoints expect.
+    func postJSON(_ url: URL, body: Data, token: String?) async throws(AuthError) -> Response {
+        try await send(method: "POST", url: url, json: body, token: token)
+    }
+
+    /// A request to the API: JSON answers, and a JSON body when there is one.
+    func send(method: String, url: URL, json: Data?, token: String?) async throws(AuthError) -> Response {
         var request = URLRequest(url: url)
+        request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let json {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = json
+        }
         return try await send(request, token: token)
     }
 

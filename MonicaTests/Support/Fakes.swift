@@ -58,6 +58,7 @@ struct Harness {
     let repository: InstanceRepository
     let checker: InstanceChecker
     let sessionManager: SessionManager
+    let vaultRepository: VaultRepository
 
     init(
         monica: FakeMonica = FakeMonica(),
@@ -77,6 +78,7 @@ struct Harness {
             deviceName: "iPhone · iOS 26.1",
             now: { [clock] in clock.now }
         )
+        vaultRepository = VaultRepository(sessionManager: sessionManager)
     }
 
     /// Another session manager on the same Keychain: the app after a relaunch.

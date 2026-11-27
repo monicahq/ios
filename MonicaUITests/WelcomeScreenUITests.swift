@@ -168,7 +168,7 @@ final class WelcomeScreenUITests: XCTestCase {
         let progress = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label CONTAINS %@", "Connecting to app.monicahq.com…")).firstMatch
         XCTAssertTrue(progress.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts[homeGreeting].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts[vaultsTitle].waitForExistence(timeout: 10))
     }
 
     @MainActor
