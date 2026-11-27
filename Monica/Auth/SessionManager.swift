@@ -18,7 +18,8 @@ enum SessionState: Equatable {
 
 /// The one owner of the session: it starts and completes sign-in, stores the session in the
 /// Keychain, renews its access, signs out, and tells the app whether the person is signed in. No
-/// other type reads a token.
+/// other type reads a token. It also owns the life of the offline copy: opened for a session,
+/// erased whenever one ends, swept at launch (see `OfflineCopy`).
 ///
 /// Main-actor isolated: the main actor is the lock that makes renewal single-flight (one stored
 /// task that every caller awaits) and orders sign-in, sign-out and switching. `generation` changes
@@ -33,6 +34,7 @@ final class SessionManager {
     @ObservationIgnored private let configuration: URLSessionConfiguration
     @ObservationIgnored private let deviceName: String
     @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let offlineCopy: OfflineCopy
     @ObservationIgnored private var client: MonicaClient?
     @ObservationIgnored private var renewal: Task<Session, any Error>?
     @ObservationIgnored private var isRetryingRevocation = false
@@ -41,13 +43,21 @@ final class SessionManager {
         store: any SecretStore,
         configuration: URLSessionConfiguration,
         deviceName: String,
+        offlineCopy: OfflineCopy,
         now: @escaping () -> Date = Date.init
     ) {
         self.store = store
         self.configuration = configuration
         self.deviceName = deviceName
+        self.offlineCopy = offlineCopy
         self.now = now
         state = store.read(.session, as: Session.self).map(SessionState.signedIn) ?? .signedOut(nil)
+        // The sweep: nothing kept survives a session that is gone, or belongs to another one.
+        if let session {
+            offlineCopy.open(owner: session.copyOwner, now: now())
+        } else {
+            offlineCopy.sweep()
+        }
     }
 
     var session: Session? {
@@ -126,7 +136,8 @@ final class SessionManager {
             refreshToken: tokens.refreshToken ?? "",
             renewedAt: now(),
             name: person.name,
-            email: person.email
+            email: person.email,
+            copyOwner: UUID()
         )
         do {
             try store.write(session, for: .session)
@@ -134,6 +145,7 @@ final class SessionManager {
             throw .signInFailed
         }
         self.generation += 1
+        offlineCopy.open(owner: session.copyOwner, now: now())
         state = .signedIn(session)
         return true
     }
@@ -221,6 +233,7 @@ final class SessionManager {
             }
         }
         guard generation == self.generation else { throw .cancelled }
+        offlineCopy.recordContact(at: now())
         return response
     }
 
@@ -295,7 +308,8 @@ final class SessionManager {
         return client
     }
 
-    /// Ends the session on this phone: requests in flight are cancelled, their results discarded.
+    /// Ends the session on this phone: requests in flight are cancelled, their results discarded,
+    /// and the offline copy is erased. Every way a session ends goes through here.
     private func endLocally(_ reason: SignOutReason) {
         generation += 1
         renewal?.cancel()
@@ -303,6 +317,8 @@ final class SessionManager {
         client?.invalidate()
         client = nil
         store.delete(.session)
+        // Before saying so: the welcome screen never shows while the copy still exists.
+        offlineCopy.erase()
         state = .signedOut(reason)
     }
 }
@@ -363,33 +379,4 @@ private struct TokenResponse: Decodable {
         case refreshToken = "refresh_token"
         case expiresIn = "expires_in"
     }
-}
-
-/// The signed-in person, as `/api/v1/me` describes them.
-struct Person: Decodable, Equatable {
-    let firstName: String
-    let lastName: String
-    let email: String
-    let nameOrder: String?
-
-    enum CodingKeys: String, CodingKey {
-        case firstName = "first_name"
-        case lastName = "last_name"
-        case email
-        case nameOrder = "name_order"
-    }
-
-    /// Their name in the order they chose on the web.
-    var name: String {
-        let parts = nameOrder == "family_first" ? [lastName, firstName] : [firstName, lastName]
-        return parts.filter { !$0.isEmpty }.joined(separator: " ")
-    }
-}
-
-private struct MeResponse: Decodable {
-    struct Resource: Decodable {
-        let attributes: Person
-    }
-
-    let data: Resource
 }

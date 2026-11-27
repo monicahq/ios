@@ -37,6 +37,16 @@ final class FakeSecretStore: SecretStore {
 
 private struct Refused: Error {}
 
+/// Whether the phone has been unlocked since its restart, set by the test.
+final class ProtectedData: Sendable {
+    private let available = Mutex(true)
+
+    var isAvailable: Bool {
+        get { available.withLock { $0 } }
+        set { available.withLock { $0 = newValue } }
+    }
+}
+
 /// A clock the test moves by hand.
 final class FakeClock: Sendable {
     private let current = Mutex(Date(timeIntervalSince1970: 1_800_000_000))
@@ -60,6 +70,11 @@ struct Harness {
     let checker: InstanceChecker
     let sessionManager: SessionManager
     let vaultRepository: VaultRepository
+    /// The folder of the offline copy, of its own for each test.
+    let copyFolder = temporaryCopyFolder()
+    /// What `UIApplication.isProtectedDataAvailable` says for the copies this harness makes.
+    let protectedData = ProtectedData()
+    let offlineCopy: OfflineCopy
 
     init(
         monica: FakeMonica = FakeMonica(),
@@ -73,23 +88,32 @@ struct Harness {
         repository = InstanceRepository(defaults: temporaryDefaults())
         repository.setURL(monica.base)
         checker = InstanceChecker(configuration: FakeMonica.configuration, appVersion: appVersion, allowsHTTP: false)
+        offlineCopy = OfflineCopy(directory: copyFolder, isProtectedDataAvailable: { [protectedData] in protectedData.isAvailable })
         sessionManager = SessionManager(
             store: store,
             configuration: FakeMonica.configuration,
             deviceName: "iPhone · iOS 26.1",
+            offlineCopy: offlineCopy,
             now: { [clock] in clock.now }
         )
-        vaultRepository = VaultRepository(sessionManager: sessionManager)
+        vaultRepository = VaultRepository(sessionManager: sessionManager, offlineCopy: offlineCopy, now: { [clock] in clock.now })
     }
 
-    /// Another session manager on the same Keychain: the app after a relaunch.
-    func relaunched() -> SessionManager {
+    /// Another session manager on the same Keychain and the same offline copy folder: the app
+    /// after a relaunch. Its copy is a new one, as after a relaunch.
+    func relaunched(copy: OfflineCopy? = nil) -> SessionManager {
         SessionManager(
             store: store,
             configuration: FakeMonica.configuration,
             deviceName: "iPhone · iOS 26.1",
+            offlineCopy: copy ?? relaunchedCopy(),
             now: { [clock] in clock.now }
         )
+    }
+
+    /// A new offline copy on this harness's folder, as the app makes at launch.
+    func relaunchedCopy() -> OfflineCopy {
+        OfflineCopy(directory: copyFolder, isProtectedDataAvailable: { [protectedData] in protectedData.isAvailable })
     }
 
     func description() async throws -> InstanceDescription {

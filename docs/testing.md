@@ -56,6 +56,19 @@ a screen needs (like `Welcome/Highlight.swift`) goes in its own file, with its o
 store of its own (`temporaryDefaults()` in `MonicaTests/Instance/InstanceRepositoryTests.swift`),
 rather than a fake behind a protocol that would exist only for the tests.
 
+## The offline copy
+
+The same way, tests use a real `OfflineCopy` on a temporary folder of its own (`Harness` makes one
+per test, and `relaunched(copy:)` reuses the folder, as the app does after a relaunch). What must be
+proven is that files really are kept, read back and deleted, which a fake could not show. Data
+Protection itself cannot be observed in the simulator and is checked by hand on a device
+(`specs/004-offline-reading/quickstart.md`).
+
+Every screen that reads offline tests, in its view model and repository tests (constitution,
+principle VIII): the copy shown when the instance cannot be reached, the "not up to date" state
+(`staleSince`), the copy replaced by the instance's answer, and that its data is gone once the
+session ended.
+
 ## A fake Monica
 
 The app never reaches the network in tests. `Monica/Debug/FakeMonica.swift` (Debug builds only)

@@ -22,8 +22,10 @@ struct VaultScreen: View {
     let onTryAgain: () -> Void
     let onBackToList: () -> Void
 
+    @Environment(\.locale) private var locale
+
     private var title: String {
-        if case let .loaded(vault) = state {
+        if case let .loaded(vault, _) = state {
             vault.name
         } else {
             ""
@@ -41,12 +43,13 @@ struct VaultScreen: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 48)
-                case let .loaded(vault):
+                case let .loaded(vault, staleSince):
                     VaultSquare(vault: vault, size: 64)
                     Text(vault.name)
                         .font(.title.bold())
                         .foregroundStyle(Color.ink)
                         .accessibilityAddTraits(.isHeader)
+                    StaleNoticeView(since: staleSince)
                     if let description = vault.shownDescription {
                         Text(description)
                             .font(.body)
@@ -63,10 +66,12 @@ struct VaultScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color.groupedPage)
-        .onChange(of: state) {
-            switch state {
+        .onChange(of: state) { old, new in
+            switch new {
             case .notFound: AccessibilityNotification.Announcement(String(localized: "vault_not_found")).post()
             case let .failed(error): AccessibilityNotification.Announcement(String(localized: error.message)).post()
+            case .loaded where (old.staleSince == nil) != (new.staleSince == nil):
+                AccessibilityNotification.Announcement(staleAnnouncement(since: new.staleSince, now: .now, locale: locale)).post()
             case .loading, .loaded: break
             }
         }
@@ -94,10 +99,36 @@ struct VaultScreen: View {
             state: .loaded(Vault(
                 id: "1", name: "Work", description: "Dunder Mifflin, Scranton branch.",
                 colour: .ochre, isDefault: false, contactCount: 0
-            )),
+            ), staleSince: nil),
             onTryAgain: {}, onBackToList: {}
         )
     }
+}
+
+#Preview("Vault, offline") {
+    NavigationStack {
+        VaultScreen(
+            state: .loaded(Vault(
+                id: "1", name: "Work", description: "Dunder Mifflin, Scranton branch.",
+                colour: .ochre, isDefault: false, contactCount: 0
+            ), staleSince: .now.addingTimeInterval(-3 * 3600)),
+            onTryAgain: {}, onBackToList: {}
+        )
+    }
+}
+
+#Preview("Vault, offline, dark, largest text") {
+    NavigationStack {
+        VaultScreen(
+            state: .loaded(Vault(
+                id: "1", name: "Work", description: "Dunder Mifflin, Scranton branch.",
+                colour: .ochre, isDefault: false, contactCount: 0
+            ), staleSince: .now.addingTimeInterval(-3 * 3600)),
+            onTryAgain: {}, onBackToList: {}
+        )
+    }
+    .preferredColorScheme(.dark)
+    .dynamicTypeSize(.accessibility5)
 }
 
 #Preview("Not found, dark") {

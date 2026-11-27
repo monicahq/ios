@@ -9,6 +9,9 @@ struct Vault: Identifiable, Hashable, Sendable {
     let colour: VaultColour
     let isDefault: Bool
     let contactCount: Int
+    /// When the instance last changed it, kept with the offline copy to notice later that the
+    /// instance changed a vault edited offline.
+    var updatedAt: Date?
 
     /// The letter on the vault's square.
     var initial: String {
@@ -79,7 +82,8 @@ struct VaultResource: Decodable {
             description: attributes.description,
             colour: VaultColour(server: attributes.colour),
             isDefault: attributes.isDefault,
-            contactCount: attributes.contactCount
+            contactCount: attributes.contactCount,
+            updatedAt: attributes.updatedAt.map { Date(timeIntervalSince1970: $0) }
         )
     }
 }
@@ -91,11 +95,14 @@ struct VaultAttributes: Decodable {
     let colour: String
     let isDefault: Bool
     let contactCount: Int
+    /// Unix seconds.
+    let updatedAt: TimeInterval?
 
     enum CodingKeys: String, CodingKey {
         case name, description, colour
         case isDefault = "is_default"
         case contactCount = "contact_count"
+        case updatedAt = "updated_at"
     }
 }
 
