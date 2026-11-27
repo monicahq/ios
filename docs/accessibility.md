@@ -22,28 +22,16 @@ is not done, whatever its tests say. The target is WCAG 2.2 AA applied to mobile
 | Gesture alternatives | Swipe, long press and drag actions are also offered as a visible control or as `.accessibilityAction`. |
 | Language | Text comes from the String Catalog so VoiceOver reads it with the right voice. |
 
-## Automated checks in tests
+## Automated checks
 
-Every screen's UI tests run Apple's accessibility audit (element descriptions, contrast, hit
-regions, Dynamic Type, clipped text, traits), in light and dark appearance:
+There are no UI tests (constitution, principle IV), so the automated checks are:
 
-```swift
-@MainActor
-func testPassesTheAccessibilityAuditInDarkAppearance() throws {
-    XCUIDevice.shared.appearance = .dark
-    defer { XCUIDevice.shared.appearance = .light }
-    let app = launchApp()
-
-    try app.auditAccessibility()
-}
-```
-
-`auditAccessibility()` (in `MonicaUITests/Launch.swift`) runs `performAccessibilityAudit()` and
-prints each issue with the element it is about, so a failure on CI says what to fix.
-
-See `WelcomeScreenUITests`. The screen's tests also check what the audit cannot: that decorative
-images are hidden, controls measure at least 44 pt, and everything stays reachable at the largest
-text size (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`).
+- the `accessibility-reviewer` agent, run on every change that touches `Monica/`, which reviews the
+  code against this page;
+- the **Accessibility Inspector**'s audit (Xcode > Open Developer Tool > Accessibility Inspector,
+  pointed at the simulator, Audit tab) on every screen the change touches, in light and dark
+  appearance and at the largest text size: element descriptions, contrast, hit regions, Dynamic
+  Type, clipped text, traits. Screen previews show the states that are hard to reach by hand.
 
 ## Manual checks before a pull request
 

@@ -75,16 +75,21 @@ iOS developer and keeps it compatible with Xcode tooling.
 
 Rationale: unit tests are fast and cheap; they are what lets us change code with confidence.
 
-### IV. Tested UI (NON-NEGOTIABLE)
+### IV. Thin, Stateless UI (No UI Tests)
 
-- Every screen MUST have XCUITest UI tests in `MonicaUITests`, covering each visible state and the
-  main user interactions (taps, input, navigation).
-- UI tests find elements by what people see or hear (label, value, role), not implementation
-  details. `accessibilityIdentifier` is allowed only when no accessible alternative exists.
-- Each user journey defined in a spec MUST have at least one end-to-end UI test running on the CI
-  simulator.
+- The project has **no UI test target**: XCUITest suites are too slow for the value they bring.
+  Confidence in a screen comes from unit tests of what drives it.
+- So screens MUST stay thin: a stateless screen view draws its `UiState` and forwards events. Every
+  decision (what to show, when, which message, what a tap does) lives in the view model or in a
+  pure function of its own file, and is unit tested there.
+- Every screen state a spec defines MUST be reachable from a view model test that asserts the
+  `UiState` producing it, and every user journey MUST be covered by view model and repository tests
+  chaining its steps against the fake instance.
+- Every screen MUST have SwiftUI previews of its states (light and dark), and is checked by hand on
+  a simulator before a pull request (see Principle VII).
 
-Rationale: users experience the app through the UI; a screen that is not tested is not done.
+Rationale: unit tests run in seconds and test the logic people depend on; slow, flaky UI
+automation was costing more than it caught.
 
 ### V. Native iOS Only
 
@@ -134,9 +139,9 @@ project. Every screen a change touches MUST:
 - respect Reduce Motion;
 - offer an alternative to any gesture-only action (swipe, long press, drag).
 
-UI tests of a screen MUST run Apple's automated accessibility audit
-(`XCUIApplication.performAccessibilityAudit()`), and a pull request that changes a screen MUST
-state how it was checked with VoiceOver. See `docs/accessibility.md`.
+A change to a screen MUST be reviewed by the `accessibility-reviewer` agent, checked with the
+Accessibility Inspector's audit on a simulator, and the pull request MUST state how it was checked
+with VoiceOver. See `docs/accessibility.md`.
 
 Rationale: Monica holds what people know about the people they love. Nobody should be locked out
 of their own memories because of how they use their phone.
@@ -160,15 +165,16 @@ of their own memories because of how they use their phone.
 
 - Every feature follows Spec Kit: `/speckit-specify` → (`/speckit-clarify`) → `/speckit-plan` →
   `/speckit-tasks` → `/speckit-implement`. Specs live in `specs/`.
-- `tasks.md` MUST list unit test and UI test tasks for every user story; a story is not done
-  until its tests pass.
+- `tasks.md` MUST list unit test tasks for every user story; a story is not done until its tests
+  pass.
 - Work happens on branches and lands on `main` only through pull requests. Nothing is ever
   committed or pushed directly to `main`, without exception.
 - CI (`.github/workflows/ci.yml`) MUST be green before merging: SwiftFormat check, SwiftLint,
-  unit tests, debug and release builds, and UI tests on a simulator.
+  unit tests with the coverage gate, and debug and release builds.
 - Coverage gate: `scripts/check-coverage.sh`, run by the CI "Unit tests" job on the unit tests'
   result bundle, fails the build when non-UI line coverage drops below 80%. `MonicaApp.swift`,
-  `*Screen.swift` and `*View.swift` files and `Theme/` are excluded: the UI tests cover them.
+  `*Screen.swift` and `*View.swift` files and `Theme/` are excluded: they hold no logic (see
+  Principle IV) and are checked through previews and by hand.
 - Documentation is part of done: public types and non-obvious functions have documentation
   comments (`///`) explaining *why*, and `README.md` / `docs/` are updated when a feature changes
   how the app is built, configured, or used.
@@ -184,4 +190,4 @@ of their own memories because of how they use their phone.
 - Versioning follows semantic versioning: MAJOR for removing or redefining a principle, MINOR for
   adding a principle or materially expanding guidance, PATCH for wording and clarifications.
 
-**Version**: 1.3.2 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-27
+**Version**: 2.0.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-27

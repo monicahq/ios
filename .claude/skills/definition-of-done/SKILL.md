@@ -1,6 +1,6 @@
 ---
 name: definition-of-done
-description: The checklist a change passes before it is committed or put in a pull request. Formatting, SwiftLint, unit tests, UI tests, builds, documentation and the features list. Use before every commit, before every pull request, and when asked whether a change is finished.
+description: The checklist a change passes before it is committed or put in a pull request. Formatting, SwiftLint, unit tests, builds, documentation and the features list. Use before every commit, before every pull request, and when asked whether a change is finished.
 ---
 
 # Definition of done
@@ -41,20 +41,13 @@ scripts/check-coverage.sh build/unit-tests.xcresult
 `check-coverage.sh` fails when non-UI line coverage drops below 80%. Keep logic out of
 `*Screen.swift` files (they are excluded from the measure) and unit test it.
 
-## 3. UI tests
+## 3. Screens
 
-Every changed screen has XCUITest tests for each of its states and its main interactions in
-`MonicaUITests`. Run only the suites of the screens the change touches:
+There are no UI tests (never add any). Every changed screen is stateless: each state it draws comes
+from a `UiState` a view model test asserts, and it has `#Preview`s of its states in light and dark.
+Check it by hand on a simulator against a real instance (the `take-screenshot` skill). When you cannot, say so explicitly in the summary of the change.
 
-```bash
-xcodebuild test -project Monica.xcodeproj -scheme Monica -destination "$DEST" \
-  -only-testing:MonicaUITests/<SuiteName>
-```
-
-When no simulator is available, say so explicitly in the summary of the change: CI runs them, but
-the change is not verified locally.
-
-Skip this step only when the change touches no Swift under `Monica/` and no resource.
+Skip this step when the change touches no Swift under `Monica/` and no resource.
 
 ## 4. Formatting
 
@@ -91,8 +84,8 @@ again afterwards: the unsigned build leaves products the simulator refuses to lo
 Every user-visible text is in `Monica/Resources/Localizable.xcstrings` and translated in every
 supported language (constitution, principle VI).
 
-Accessibility is mandatory (principle VII). Follow the `accessibility` skill: the screen's UI tests
-run the accessibility audit, the `accessibility-reviewer` agent has reviewed the change and its
+Accessibility is mandatory (principle VII). Follow the `accessibility` skill: the
+`accessibility-reviewer` agent has reviewed the change and its
 confirmed findings are fixed, and the manual checks of `docs/accessibility.md` are done or
 explicitly reported as not done.
 
@@ -106,7 +99,7 @@ explicitly reported as not done.
 ## 9. Constitution
 
 The change respects `.specify/memory/constitution.md`: simplest solution, official Apple
-architecture, unit and UI tests, native only. A deviation is justified in the feature's `plan.md`.
+architecture, unit tests and no UI tests, native only. A deviation is justified in the feature's `plan.md`.
 
 ## 10. Commit
 

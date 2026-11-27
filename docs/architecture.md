@@ -62,7 +62,7 @@ final class ContactsViewModel {
     }
 }
 
-// Stateful entry point: owns the view model. Covered by the end-to-end UI tests.
+// Stateful entry point: owns the view model. No logic: the view model's tests cover it.
 struct ContactsRoute: View {
     @State var viewModel: ContactsViewModel
     let onContactTap: (Contact.ID) -> Void
@@ -73,7 +73,7 @@ struct ContactsRoute: View {
     }
 }
 
-// Stateless screen: pure function of its inputs. This is what UI tests and previews target.
+// Stateless screen: pure function of its inputs. This is what previews target.
 struct ContactsScreen: View {
     let state: ContactsUiState
     let onContactTap: (Contact.ID) -> Void
