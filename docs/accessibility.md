@@ -34,9 +34,12 @@ func testPassesTheAccessibilityAuditInDarkAppearance() throws {
     defer { XCUIDevice.shared.appearance = .light }
     let app = launchApp()
 
-    try app.performAccessibilityAudit()
+    try app.auditAccessibility()
 }
 ```
+
+`auditAccessibility()` (in `MonicaUITests/Launch.swift`) runs `performAccessibilityAudit()` and
+prints each issue with the element it is about, so a failure on CI says what to fix.
 
 See `WelcomeScreenUITests`. The screen's tests also check what the audit cannot: that decorative
 images are hidden, controls measure at least 44 pt, and everything stays reachable at the largest

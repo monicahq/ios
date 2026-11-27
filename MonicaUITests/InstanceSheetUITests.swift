@@ -149,7 +149,7 @@ final class InstanceSheetUITests: XCTestCase {
     func testPassesTheAccessibilityAuditInLightAppearance() throws {
         let app = openSheet()
 
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -158,7 +158,7 @@ final class InstanceSheetUITests: XCTestCase {
         defer { XCUIDevice.shared.appearance = .light }
         let app = openSheet()
 
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -173,7 +173,7 @@ final class InstanceSheetUITests: XCTestCase {
         let app = openSheet()
         showError(app)
 
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -183,7 +183,7 @@ final class InstanceSheetUITests: XCTestCase {
         let app = openSheet()
         showError(app)
 
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor

@@ -139,7 +139,7 @@ final class WelcomeScreenUITests: XCTestCase {
     func testPassesTheAccessibilityAuditInLightAppearance() throws {
         let app = open()
 
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -147,7 +147,7 @@ final class WelcomeScreenUITests: XCTestCase {
         try inDarkAppearance {
             let app = open()
 
-            try app.performAccessibilityAudit()
+            try app.auditAccessibility()
         }
     }
 }

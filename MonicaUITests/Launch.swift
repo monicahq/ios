@@ -40,3 +40,16 @@ extension XCUIElement {
         typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + text)
     }
 }
+
+@MainActor
+extension XCUIApplication {
+    /// Runs Apple's accessibility audit and prints every issue with the element it is about, so a
+    /// failure on CI says which element to fix. Every issue still fails the test.
+    func auditAccessibility() throws {
+        try performAccessibilityAudit { issue in
+            let element = issue.element.map { "\($0.elementType.rawValue) '\($0.label)'" } ?? "no element"
+            print("Accessibility audit: \(issue.compactDescription) on \(element): \(issue.detailedDescription)")
+            return false
+        }
+    }
+}
