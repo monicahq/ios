@@ -1,7 +1,7 @@
 name: Start the simulator
 description: >
-  Start booting the iPhone 17 simulator of the newest iOS runtime in the background and export
-  its id as SIMULATOR_ID. Wait for it with wait-for-simulator before the tests.
+  Start booting and warming up the iPhone 17 simulator of the newest iOS runtime in the
+  background, and export its id as SIMULATOR_ID. Wait for it with wait-for-simulator before the tests.
 
 runs:
   using: composite
@@ -26,6 +26,14 @@ runs:
           echo "Simulators not ready yet (attempt $attempt)"; sleep 5
         done
         if [ -z "$id" ]; then xcrun simctl list devices available; exit 1; fi
-        nohup xcrun simctl boot "$id" > "$RUNNER_TEMP/simulator-boot.log" 2>&1 < /dev/null &
+        # Once booted, an app is launched once: the first launch after a boot is very slow, and it
+        # then happens during the build instead of in the first UI test.
+        nohup bash -c '
+          xcrun simctl boot "$0" && xcrun simctl bootstatus "$0" -b > /dev/null
+          echo "Booted at $(date +%T)"
+          xcrun simctl launch "$0" com.apple.Preferences && sleep 5
+          xcrun simctl terminate "$0" com.apple.Preferences
+          echo "Warmed up at $(date +%T)"
+        ' "$id" > "$RUNNER_TEMP/simulator-boot.log" 2>&1 < /dev/null &
         echo $! > "$RUNNER_TEMP/simulator-boot.pid"
         echo "SIMULATOR_ID=$id" >> "$GITHUB_ENV"

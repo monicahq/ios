@@ -1,5 +1,5 @@
 name: Wait for the simulator
-description: Wait until the simulator started by boot-simulator has finished booting
+description: Wait until the simulator started by boot-simulator has finished booting and warming up
 
 runs:
   using: composite
