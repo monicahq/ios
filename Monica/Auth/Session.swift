@@ -17,6 +17,9 @@ struct Session: Codable, Equatable, CustomStringConvertible, CustomDebugStringCo
     var renewedAt: Date
     var name: String
     var email: String
+    /// Made when the session is created and kept by every renewal: the offline copy belongs to this
+    /// session only, never to another one, even of the same account on the same instance.
+    var copyOwner: UUID
 
     /// The access token is renewed a minute before the instance would refuse it.
     func needsRenewal(at now: Date) -> Bool {

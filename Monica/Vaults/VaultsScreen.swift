@@ -94,6 +94,7 @@ struct VaultsScreen: View {
     /// time the person comes back from a vault.
     @State private var didFocusTitle = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
 
     private var vaults: [Vault]? {
         if case let .loaded(vaults) = state.content, !vaults.isEmpty {
@@ -115,6 +116,8 @@ struct VaultsScreen: View {
                         .accessibilityAction(named: Text("vaults_refresh")) { Task { await onRefresh() } }
                         .padding(.horizontal, 4)
                         .fixedSize(horizontal: false, vertical: true)
+                    StaleNoticeView(since: state.staleSince)
+                        .padding(.horizontal, 4)
                     content(minHeight: geometry.size.height * 0.6)
                 }
                 .padding(.horizontal, 16)
@@ -139,10 +142,17 @@ struct VaultsScreen: View {
             try? await Task.sleep(for: .milliseconds(300))
             isTitleFocused = true
         }
+        // One announcement when a reload fails offline: a second one would cut the first off.
         .onChange(of: state.refreshFailed) {
             if state.refreshFailed {
-                AccessibilityNotification.Announcement(String(localized: "vaults_refresh_failed")).post()
+                let failed = String(localized: "vaults_refresh_failed")
+                let text = state.staleSince.map { staleAnnouncement(since: $0, prefix: failed, now: .now, locale: locale) } ?? failed
+                AccessibilityNotification.Announcement(text).post()
             }
+        }
+        .onChange(of: state.staleSince == nil) {
+            guard !state.refreshFailed else { return }
+            AccessibilityNotification.Announcement(staleAnnouncement(since: state.staleSince, now: .now, locale: locale)).post()
         }
         .onChange(of: state.content) {
             if case let .failed(error) = state.content {
@@ -338,6 +348,15 @@ private let previewVaults = [
 
 #Preview("Vaults, dark, could not refresh") {
     vaultsPreview(VaultsUiState(content: .loaded(previewVaults), refreshFailed: true))
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Vaults, offline") {
+    vaultsPreview(VaultsUiState(content: .loaded(previewVaults), staleSince: .now.addingTimeInterval(-3 * 3600)))
+}
+
+#Preview("Vaults, dark, offline, could not refresh") {
+    vaultsPreview(VaultsUiState(content: .loaded(previewVaults), refreshFailed: true, staleSince: .now.addingTimeInterval(-3 * 3600)))
         .preferredColorScheme(.dark)
 }
 

@@ -1,7 +1,9 @@
+import Foundation
 import Observation
 
-/// The list of vaults a signed-in person lands on. Loads it from the instance each time the list
-/// appears, so a vault created, renamed or deleted elsewhere shows without asking.
+/// The list of vaults a signed-in person lands on. Shows the copy kept on the phone at once, then
+/// loads the list from the instance each time it appears, so a vault created, renamed or deleted
+/// elsewhere shows without asking. Offline, the copy stays, said not up to date.
 @MainActor
 @Observable
 final class VaultsViewModel {
@@ -12,16 +14,25 @@ final class VaultsViewModel {
         self.repository = repository
     }
 
-    /// Loads the list. The first time, the screen shows that it is loading; afterwards the list
-    /// stays shown and is only replaced once the new one arrived. An ended session says nothing
-    /// here: the app goes back to the welcome screen, which explains.
+    /// Loads the list. With nothing shown yet, the copy kept on the phone shows at once, or else
+    /// the screen shows that it is loading; afterwards the list stays shown and is only replaced
+    /// once the new one arrived. When the instance cannot answer, a list shown stays, said not up
+    /// to date; a reload asked while one was shown also says it failed. An ended session says
+    /// nothing here: the app goes back to the welcome screen, which explains.
     func load() async {
-        let hasContent = if case .loaded = state.content {
+        let wasShown = if case .loaded = state.content {
             true
         } else {
             false
         }
-        if hasContent {
+        var copyDate = state.staleSince
+        if !wasShown, let cached = repository.cachedVaults() {
+            state.content = .loaded(cached.value)
+            copyDate = cached.updatedAt
+        } else if wasShown {
+            copyDate = copyDate ?? repository.cachedVaults()?.updatedAt
+        }
+        if case .loaded = state.content {
             state.isRefreshing = true
         } else {
             state.content = .loading
@@ -30,10 +41,12 @@ final class VaultsViewModel {
         do {
             state.content = try await .loaded(repository.vaults())
             state.refreshFailed = false
+            state.staleSince = nil
         } catch {
             guard let shown = Self.message(for: error) else { return }
-            if hasContent {
-                state.refreshFailed = true
+            if case .loaded = state.content {
+                state.refreshFailed = wasShown
+                state.staleSince = copyDate
             } else {
                 state.content = .failed(shown)
             }

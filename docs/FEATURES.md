@@ -11,3 +11,6 @@ Chronological list of every feature and improvement. Maintained with the `featur
 * Vaults: Tapping a vault opens a first vault screen with its name and description.
 * Vaults/new: Added creating a vault with a name, a description, one of the eight colours and the default choice, showing the instance's own message when it refuses.
 * Account: Your initials open a sheet with your name, the instance, instance settings and log out, replacing the placeholder home.
+* Vaults: The list of vaults and each vault open at once from a copy kept on the phone, then update from the instance.
+* Vaults: Without a connection, the list and every vault stay readable, with "Not up to date. Last updated 3 hours ago."
+* App: The copy kept on the phone is protected, never backed up, and erased at every sign-out, instance switch or ended session, and after 30 days without reaching the instance.

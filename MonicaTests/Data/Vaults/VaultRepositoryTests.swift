@@ -1,5 +1,6 @@
 import Foundation
 @testable import Monica
+import SwiftData
 import Testing
 
 @MainActor
@@ -154,5 +155,152 @@ struct VaultRepositoryTests {
 
     @Test func `nothing is asked when signed out`() async {
         await #expect(throws: ApiError.failed(.sessionEnded)) { _ = try await harness.vaultRepository.vaults() }
+    }
+
+    // MARK: The offline copy
+
+    private func cachedNames(_ repository: VaultRepository) -> [String]? {
+        repository.cachedVaults()?.value.map(\.name)
+    }
+
+    @Test func `nothing is kept before the list was loaded`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+
+        #expect(repository.cachedVaults() == nil)
+    }
+
+    @Test func `the list loaded is kept, in its order, with when it was loaded`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        harness.clock.advance(by: 60)
+
+        let vaults = try await repository.vaults()
+
+        let cached = try #require(repository.cachedVaults())
+        #expect(cached.value == vaults)
+        #expect(cached.updatedAt == harness.clock.now)
+        #expect(cached.value.first?.updatedAt == Date(timeIntervalSince1970: 1_756_252_800))
+    }
+
+    @Test func `a vault answered twice is kept once, and leaves with it`() async throws {
+        // Created while the list loaded, a vault on the edge of a page comes back on the next one.
+        let repository = try await signedIn(with: [
+            FakeMonica.Vault(id: "work", name: "Work"),
+            FakeMonica.Vault(id: "work", name: "Work"),
+        ])
+        _ = try await repository.vaults()
+        #expect(cachedNames(repository) == ["Work"])
+
+        harness.monica.settings.vaults = []
+        _ = try await repository.vaults()
+
+        #expect(cachedNames(repository) == [])
+    }
+
+    @Test func `a new answer replaces the copy whole`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        harness.monica.settings.vaults = [
+            FakeMonica.Vault(id: "work", name: "Office", colour: "#9a3f2b"),
+            FakeMonica.Vault(id: "new", name: "Book club"),
+            FakeMonica.Vault(id: "personal", name: "Personal", isDefault: true),
+        ]
+
+        _ = try await repository.vaults()
+
+        #expect(cachedNames(repository) == ["Office", "Book club", "Personal"])
+        #expect(repository.cachedVaults()?.value.first?.colour == .rust)
+    }
+
+    @Test func `a vault with a change waiting is never overwritten by a refresh`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        let context = try #require(harness.offlineCopy.context)
+        let family = try #require(try context.fetch(FetchDescriptor<CachedVault>()).first { $0.serverID == "family" })
+        family.syncState = .pendingUpdate
+        family.name = "Family (edited offline)"
+        harness.offlineCopy.save()
+        harness.monica.settings.vaults.removeAll { $0.id == "family" }
+
+        _ = try await repository.vaults()
+
+        // A vault waiting to be sent keeps its place; the others follow the answer.
+        #expect(Set(cachedNames(repository) ?? []) == ["Personal", "Work", "Family (edited offline)"])
+        #expect(cachedNames(repository)?.firstIndex(of: "Personal") == 0)
+    }
+
+    @Test func `a failed load leaves the copy as it was`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        let before = repository.cachedVaults()
+        harness.monica.settings.unreachable = true
+        harness.clock.advance(by: 60)
+
+        _ = try? await repository.vaults()
+
+        #expect(repository.cachedVaults() == before)
+    }
+
+    @Test func `the copy is read again after a relaunch`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+
+        let copy = harness.relaunchedCopy()
+        let relaunched = harness.relaunched(copy: copy)
+        let after = VaultRepository(sessionManager: relaunched, offlineCopy: copy, now: { harness.clock.now })
+
+        #expect(cachedNames(after) == ["Personal", "Family", "Work"])
+    }
+
+    @Test func `nothing is kept once the session ended`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+
+        await harness.sessionManager.logOut()
+
+        #expect(repository.cachedVaults() == nil)
+    }
+
+    @Test func `a vault of the list is kept on its own too`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+
+        let cached = try #require(repository.cachedVault(id: "work"))
+
+        #expect(cached.value.name == "Work")
+        #expect(cached.updatedAt == harness.clock.now)
+        #expect(repository.cachedVault(id: "unknown") == nil)
+    }
+
+    @Test func `reading one vault updates it in place in the list`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        harness.monica.settings.vaults[1].name = "Relatives"
+        harness.clock.advance(by: 60)
+
+        _ = try await repository.vault(id: "family")
+
+        #expect(cachedNames(repository) == ["Personal", "Relatives", "Work"])
+        #expect(repository.cachedVault(id: "family")?.updatedAt == harness.clock.now)
+    }
+
+    @Test func `a vault read on its own that the list did not hold comes last`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        harness.monica.settings.vaults.append(FakeMonica.Vault(id: "new", name: "Book club"))
+
+        _ = try await repository.vault(id: "new")
+
+        #expect(cachedNames(repository) == ["Personal", "Family", "Work", "Book club"])
+    }
+
+    @Test func `a vault that no longer exists leaves the copy`() async throws {
+        let repository = try await signedIn(with: FakeMonica.threeVaults)
+        _ = try await repository.vaults()
+        harness.monica.settings.goneVaultIDs = ["work"]
+
+        await #expect(throws: ApiError.notFound) { _ = try await repository.vault(id: "work") }
+
+        #expect(repository.cachedVault(id: "work") == nil)
+        #expect(cachedNames(repository) == ["Personal", "Family"])
     }
 }

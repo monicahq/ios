@@ -995,6 +995,42 @@
         }
       }
     },
+    "stale_notice" : {
+      "comment" : "Under a screen's title when what it shows comes from the copy kept on the phone. %@ is a relative time, already in the person's language: \"3 hours ago\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not up to date. Last updated %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas à jour. Mis à jour %@."
+          }
+        }
+      }
+    },
+    "stale_notice_gone" : {
+      "comment" : "Announced to VoiceOver when the \"Not up to date\" line goes away because the screen was just updated from the instance.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to date."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À jour."
+          }
+        }
+      }
+    },
     "vault_back_to_list" : {
       "extractionState" : "manual",
       "localizations" : {

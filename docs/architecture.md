@@ -95,6 +95,8 @@ struct ContactsScreen: View {
   sheet).
 - Small preferences (the instance address) live in `UserDefaults`, injected into the repository
   that owns them (`InstanceRepository`), never read through `UserDefaults.standard` in a type.
+- Instance data kept on the phone goes in the offline copy's SwiftData store, never in
+  `UserDefaults`, files or the Keychain.
 - Use an Apple framework (SwiftData, BackgroundTasks, ...) or a Swift package only when a feature
   needs it, and justify a package in the feature's `plan.md`.
 
@@ -127,8 +129,36 @@ People sign in on the instance's own web pages (OAuth 2.0 with PKCE), never in t
 Each kind of data has one repository, its single source of truth (`Data/Vaults/VaultRepository`):
 it builds the requests, decodes the answers, and turns statuses into `Data/ApiError`
 (`failed(AuthError)`, `notFound` for a 404, `invalid(Refusal)` for a 422 with the instance's own
-words). View models call only repositories, and nothing the API returns is stored on the phone.
-Repositories have no protocol: tests run them against the fake Monica (see `docs/testing.md`).
+words). View models call only repositories. What the API answers is kept in the offline copy
+(below), and nowhere else on the phone. Repositories have no protocol: tests run them against the
+fake Monica (see `docs/testing.md`).
+
+## Offline copy
+
+Every screen showing instance data stays readable offline (constitution, principle VIII). The full
+rules are in `specs/004-offline-reading/contracts/offline-copy.md`; in short:
+
+- `Data/Offline/OfflineCopy` is one SwiftData store (`Application Support/OfflineCopy/`), protected
+  by Data Protection until the first unlock after a restart and excluded from backups. Its models
+  are all in `Data/Offline/OfflineSchema.swift` (`OfflineSchemaV1`), so erasing the folder erases
+  every kind of data at once.
+- `SessionManager` owns its life: it opens the copy for the session (`Session.copyOwner`), erases
+  it in `endLocally` before publishing `.signedOut` (every way a session ends goes through there),
+  and sweeps it at launch (signed out, another owner, unreadable, 30 days without contact, clock
+  moved back; never before the first unlock, when the Keychain cannot be read either). Repositories
+  never open nor erase it.
+- Repositories write only what the instance answered, right after a successful answer, and offer a
+  `cachedX()` read returning `Cached<Value>` (the value and when it was answered).
+- Every record carries five sync fields (`localID`, `serverID`, `syncState`, `serverUpdatedAt`,
+  `syncedAt`) and every refresh goes through `reconcile`, which never touches a record with a
+  change waiting: offline writing can come later without changing a record's identity.
+- View models show the copy at once, then the instance's answer; when the instance cannot answer,
+  they keep the copy and set `staleSince`, which screens show with `Offline/StaleNoticeView`.
+
+```
+Monica/Data/Offline/   OfflineCopy, OfflineSchema, SyncState, Reconcile, Cached
+Monica/Offline/        StaleNotice (text), StaleNoticeView (the shared line)
+```
 
 ## The signed-in app
 

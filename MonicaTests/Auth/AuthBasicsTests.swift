@@ -98,14 +98,27 @@ struct SecretsDescriptionTests {
         }
     }
 
-    @Test func `a session never prints its tokens`() throws {
-        let session = try Session(
+    private func session() throws -> Session {
+        try Session(
             instance: "https://monica.example.com", clientID: "client", scope: "api",
             tokenEndpoint: url("https://monica.example.com/oauth/token"),
             revocationEndpoint: url("https://monica.example.com/oauth/revoke"),
             accessToken: "secret-access", accessTokenExpiresAt: Date(), refreshToken: "secret-refresh",
-            renewedAt: Date(), name: "Pam", email: "pam@example.com"
+            renewedAt: Date(), name: "Pam", email: "pam@example.com", copyOwner: UUID()
         )
+    }
+
+    @Test func `a session keeps the owner of its offline copy when stored`() throws {
+        let session = try session()
+
+        let stored = try JSONDecoder().decode(Session.self, from: JSONEncoder().encode(session))
+
+        #expect(stored == session)
+        #expect(stored.copyOwner == session.copyOwner)
+    }
+
+    @Test func `a session never prints its tokens`() throws {
+        let session = try session()
         let revocation = PendingRevocation(session: session, now: Date())
 
         for text in [

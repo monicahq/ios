@@ -15,10 +15,19 @@ struct MonicaApp: App {
         let configuration = URLSessionConfiguration.ephemeral
         let instanceRepository = InstanceRepository(defaults: defaults)
         let checker = InstanceChecker(configuration: configuration, appVersion: appVersion, allowsHTTP: allowsHTTPInstances)
-        let sessionManager = SessionManager(store: keychain, configuration: configuration, deviceName: Self.deviceName())
+        let offlineCopy = OfflineCopy(
+            directory: URL.applicationSupportDirectory.appending(path: "OfflineCopy", directoryHint: .isDirectory),
+            isProtectedDataAvailable: { UIApplication.shared.isProtectedDataAvailable }
+        )
+        let sessionManager = SessionManager(
+            store: keychain,
+            configuration: configuration,
+            deviceName: Self.deviceName(),
+            offlineCopy: offlineCopy
+        )
         self.instanceRepository = instanceRepository
         self.checker = checker
-        vaultRepository = VaultRepository(sessionManager: sessionManager)
+        vaultRepository = VaultRepository(sessionManager: sessionManager, offlineCopy: offlineCopy)
         _sessionManager = State(initialValue: sessionManager)
         _welcome = State(initialValue: WelcomeViewModel(
             instanceRepository: instanceRepository,
